@@ -21,7 +21,7 @@ Respond ONLY with valid JSON. No markdown. No backticks. No preamble."""
 
 @app.post("/analyse")
 async def analyse(inp: CodeInput):
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
+    client = anthropic.Anthropic(api_key=os.getenv("API_KEY", ""))
 
     prompt = f"""Analyse this code for EU AI Act and GDPR compliance issues:
 
