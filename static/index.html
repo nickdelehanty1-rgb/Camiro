@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camiro — EU Code Compliance Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --forest:#1B4332;
+  --green:#2D6A4F;
+  --sage:#52B788;
+  --mint:#B7E4C7;
+  --pale:#D8F3DC;
+  --green50:#F0FAF4;
+  --green200:#BBF7D0;
+  --green800:#166534;
+  --cream:#FAFAF8;
+  --sand:#F5F2EC;
+  --border:#E8E4DD;
+  --text:#1A1A1A;
+  --muted:#6B7280;
+  --light:#9CA3AF;
+}
+body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+
+/* NAV */
+.nav{padding:16px 40px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(250,250,248,0.95);backdrop-filter:blur(8px);position:sticky;top:0;z-index:100}
+.nav-logo{display:flex;align-items:center;gap:10px}
+.nav-icon{width:26px;height:26px}
+.nav-name{font-size:16px;font-weight:600;color:var(--forest);letter-spacing:-0.3px}
+.nav-tag{font-size:11px;color:var(--sage);font-weight:400;margin-left:2px}
+.nav-right{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:11px;padding:3px 10px;border-radius:20px;background:var(--green50);color:var(--green800);border:1px solid var(--green200);font-weight:500}
+.nav-link{font-size:13px;color:var(--muted);text-decoration:none}
+.nav-link:hover{color:var(--forest)}
+
+/* HERO */
+.hero-section{background:var(--forest);padding:64px 40px;text-align:center}
+.hero-section h1{font-size:36px;font-weight:600;color:#fff;letter-spacing:-0.8px;margin-bottom:14px;line-height:1.2}
+.hero-section p{font-size:16px;color:var(--mint);max-width:520px;margin:0 auto 32px;line-height:1.7}
+.hero-stats{display:flex;justify-content:center;gap:40px;margin-top:8px}
+.hero-stat{text-align:center}
+.hero-stat-val{font-size:28px;font-weight:600;color:var(--sage)}
+.hero-stat-label{font-size:12px;color:var(--mint);margin-top:2px}
+
+/* MAIN */
+.main{max-width:720px;margin:0 auto;padding:48px 24px 80px}
+.section-title{font-size:11px;font-weight:500;color:var(--light);letter-spacing:0.5px;text-transform:uppercase;margin:0 0 10px}
+
+/* INPUT */
+.input-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:16px}
+.input-tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--sand);border-radius:8px;padding:4px}
+.tab-btn{flex:1;padding:7px;border:none;background:none;border-radius:6px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s}
+.tab-btn.active{background:#fff;color:var(--forest);box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+.code-label{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0.3px;text-transform:uppercase;margin-bottom:8px;display:block}
+textarea{width:100%;min-height:200px;border:none;outline:none;resize:vertical;font-family:'SF Mono',Menlo,'Fira Code',monospace;font-size:12.5px;line-height:1.6;color:var(--text);background:transparent;padding:0}
+textarea::placeholder{color:var(--light)}
+.file-drop{border:1.5px dashed var(--border);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all 0.15s}
+.file-drop:hover,.file-drop.dragover{border-color:var(--sage);background:var(--green50)}
+.file-drop-icon{font-size:28px;margin-bottom:8px}
+.file-drop-text{font-size:14px;color:var(--muted)}
+.file-drop-sub{font-size:12px;color:var(--light);margin-top:4px}
+.file-input{display:none}
+.file-selected{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--green50);border-radius:8px;margin-top:12px}
+.file-selected-name{font-size:13px;color:var(--green800);font-family:monospace}
+
+/* FILENAME INPUT */
+.filename-row{display:flex;gap:10px;margin-bottom:16px}
+.filename-input{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;color:var(--text);background:#fff;outline:none}
+.filename-input:focus{border-color:var(--sage)}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:10px}
+.scan-btn{flex:1;padding:13px;background:var(--forest);color:var(--mint);font-size:14px;font-weight:500;border:none;border-radius:10px;cursor:pointer;font-family:'Inter',sans-serif;transition:background 0.15s}
+.scan-btn:hover{background:var(--green)}
+.scan-btn:disabled{opacity:0.4;cursor:not-allowed}
+.clear-btn{padding:13px 16px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--muted);font-size:14px;cursor:pointer;font-family:'Inter',sans-serif}
+.clear-btn:hover{border-color:var(--sage);color:var(--forest)}
+
+.hint{font-size:12px;color:var(--light);margin-top:8px}
+
+/* LOADING */
+.loading{text-align:center;padding:64px 0}
+.loading-tree{animation:sway 2s ease-in-out infinite;display:inline-block}
+@keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.loading-text{font-size:14px;color:var(--muted);margin-top:16px}
+.loading-sub{font-size:12px;color:var(--light);margin-top:4px}
+
+/* RESULTS */
+.results{animation:fadeUp 0.3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:gap}
+.result-title{font-size:20px;font-weight:600;color:var(--text);letter-spacing:-0.3px}
+.pdf-btn{display:flex;align-items:center;gap:6px;padding:9px 16px;background:var(--forest);color:var(--mint);font-size:13px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;transition:background 0.15s}
+.pdf-btn:hover{background:var(--green)}
+.pdf-btn svg{width:14px;height:14px}
+
+.risk-card{border-radius:14px;padding:20px 22px;margin-bottom:20px;border:1px solid transparent}
+.risk-prohibited{background:#FEF2F2;border-color:#FECACA}
+.risk-high{background:#FFFBEB;border-color:#FDE68A}
+.risk-limited{background:#EFF6FF;border-color:#BFDBFE}
+.risk-minimal{background:var(--green50);border-color:var(--green200)}
+.risk-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.risk-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-prohibited{background:#EF4444}
+.dot-high{background:#F59E0B}
+.dot-limited{background:#3B82F6}
+.dot-minimal{background:var(--sage)}
+.risk-level{font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase}
+.level-prohibited{color:#B91C1C}
+.level-high{color:#92400E}
+.level-limited{color:#1D4ED8}
+.level-minimal{color:var(--green800)}
+.risk-summary{font-size:14px;line-height:1.6;color:var(--text)}
+
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:20px}
+.metric{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center}
+.metric-n{font-size:24px;font-weight:600;letter-spacing:-0.5px;line-height:1}
+.metric-l{font-size:11px;color:var(--muted);margin-top:3px}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.chip{font-size:12px;padding:4px 10px;border-radius:20px;background:var(--sand);color:var(--muted);border:1px solid var(--border)}
+.chip-green{background:var(--green50);color:var(--green800);border-color:var(--green200)}
+
+.finding{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:8px}
+.finding:hover{border-color:#C9D5C0}
+.finding-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px}
+.finding-title{font-size:13.5px;font-weight:500;color:var(--text)}
+.sev{font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.sev-high{background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA}
+.sev-medium{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
+.sev-low{background:var(--green50);color:var(--green800);border:1px solid var(--green200)}
+.sev-info{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}
+.finding-desc{font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:8px}
+.finding-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.finding-hint{font-size:11px;font-family:monospace;color:var(--light);background:var(--sand);padding:3px 8px;border-radius:5px}
+.finding-cite{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:#166534;background:#DCFCE7;padding:3px 10px;border-radius:20px;border:1px solid var(--green200)}
+.finding-rec{margin-top:8px;padding:10px 12px;background:var(--green50);border-radius:8px;font-size:12.5px;color:var(--green800);line-height:1.5;border-left:2.5px solid var(--sage)}
+
+.actions-list{background:var(--forest);border-radius:12px;padding:16px 20px}
+.action-item{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+.action-item:last-child{margin-bottom:0}
+.action-n{width:20px;height:20px;border-radius:50%;background:rgba(82,183,136,0.25);color:#D8F3DC;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.action-t{font-size:13px;color:#D8F3DC;line-height:1.5}
+
+.scan-again{display:block;margin:24px auto 0;background:none;border:none;color:var(--light);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif}
+.scan-again:hover{color:var(--muted)}
+
+.hidden{display:none}
+
+/* FOOTER */
+.footer{border-top:1px solid var(--border);padding:32px 40px;text-align:center;margin-top:40px}
+.footer-text{font-size:12px;color:var(--light)}
+.footer-link{color:var(--sage);text-decoration:none}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <svg class="nav-icon" viewBox="0 0 26 26" fill="none">
+      <ellipse cx="13" cy="8.5" rx="7.5" ry="5.5" fill="#52B788"/>
+      <ellipse cx="8" cy="12.5" rx="5" ry="3.8" fill="#52B788"/>
+      <ellipse cx="18" cy="12.5" rx="5" ry="3.8" fill="#52B788"/>
+      <rect x="12" y="17" width="2.2" height="5" rx="1" fill="#2D6A4F"/>
+    </svg>
+    <span class="nav-name">Camiro<span class="nav-tag">EU regulatory intelligence</span></span>
+  </div>
+  <div class="nav-right">
+    <span class="nav-badge">Beta</span>
+    <a href="mailto:nick@camiro.ai" class="nav-link">Contact</a>
+  </div>
+</nav>
+
+<div class="hero-section">
+  <h1>Compliance by code,<br>not questionnaire.</h1>
+  <p>Paste your code. Camiro reads it against EU AI Act and GDPR primary text and returns a full compliance report — every finding cited to a specific article.</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-val">€4bn</div>
+      <div class="hero-stat-label">Irish regulatory fines</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">7%</div>
+      <div class="hero-stat-label">Max AI Act fine</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">Aug 2</div>
+      <div class="hero-stat-label">Next AI Act deadline</div>
+    </div>
+  </div>
+</div>
+
+<main class="main">
+
+  <div id="inputView">
+    <div class="input-card">
+      <div class="input-tabs">
+        <button class="tab-btn active" onclick="switchTab('paste')">Paste code</button>
+        <button class="tab-btn" onclick="switchTab('upload')">Upload file</button>
+      </div>
+
+      <div id="pasteTab">
+        <span class="code-label">Your code</span>
+        <textarea id="codeInput" placeholder="# Paste Python, JavaScript, SQL, API handlers, ML pipelines...
+# Camiro reads what your code actually does — not what you think it does.
+
+import openai
+
+def score_candidate(user_id, cv_text, age, gender):
+    response = openai.chat.completions.create(
+        model='gpt-4',
+        messages=[{'role':'user','content':f'Rate 1-10: {cv_text} Age:{age} Gender:{gender}'}]
+    )
+    score = int(response.choices[0].message.content.strip())
+    if score < 6:
+        db.execute('UPDATE applicants SET status=rejected WHERE id=?',[user_id])
+    return score"></textarea>
+      </div>
+
+      <div id="uploadTab" class="hidden">
+        <div class="file-drop" id="fileDrop" onclick="document.getElementById('fileInput').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+          <div class="file-drop-icon">📄</div>
+          <div class="file-drop-text">Drop your file here or click to browse</div>
+          <div class="file-drop-sub">Python, JavaScript, TypeScript, SQL, YAML, JSON — any code file</div>
+        </div>
+        <input type="file" id="fileInput" class="file-input" accept=".py,.js,.ts,.sql,.yaml,.yml,.json,.txt" onchange="loadFile(this)">
+        <div id="fileSelected" class="file-selected hidden">
+          <span>📄</span>
+          <span class="file-selected-name" id="fileName"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="filename-row">
+      <input type="text" class="filename-input" id="filenameInput" placeholder="Filename or system description (optional — e.g. recruitment_scorer.py)">
+    </div>
+
+    <div class="btn-row">
+      <button class="scan-btn" onclick="runScan()">Scan for EU compliance issues →</button>
+      <button class="clear-btn" onclick="clearAll()">Clear</button>
+    </div>
+    <p class="hint">Nothing is stored. Code is processed and discarded immediately. No training on your data.</p>
+  </div>
+
+  <div id="loadingView" class="loading hidden">
+    <div class="loading-tree">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <ellipse cx="26" cy="17" rx="15" ry="11" fill="#B7E4C7"/>
+        <ellipse cx="16" cy="25" rx="10" ry="7.5" fill="#B7E4C7"/>
+        <ellipse cx="36" cy="25" rx="10" ry="7.5" fill="#B7E4C7"/>
+        <rect x="23.5" y="33" width="5" height="10" rx="2.5" fill="#52B788"/>
+      </svg>
+    </div>
+    <div class="loading-text">Analysing your code…</div>
+    <div class="loading-sub">Cross-referencing EU AI Act (2024/1689) and GDPR (2016/679)</div>
+  </div>
+
+  <div id="resultsView" class="results hidden">
+
+    <div class="result-header">
+      <div class="result-title">Compliance report</div>
+      <button class="pdf-btn" onclick="downloadPDF()">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2"/>
+        </svg>
+        Download PDF
+      </button>
+    </div>
+
+    <div id="riskCard" class="risk-card">
+      <div class="risk-header">
+        <div id="riskDot" class="risk-dot"></div>
+        <span id="riskLevel" class="risk-level"></span>
+      </div>
+      <div id="riskSummary" class="risk-summary"></div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div id="m1" class="metric-n">—</div><div class="metric-l">Issues found</div></div>
+      <div class="metric"><div id="m2" class="metric-n" style="color:#B91C1C">—</div><div class="metric-l">High severity</div></div>
+      <div class="metric"><div id="m3" class="metric-n" style="color:#92400E">—</div><div class="metric-l">Medium severity</div></div>
+      <div class="metric"><div id="m4" class="metric-n">—</div><div class="metric-l">Data types</div></div>
+    </div>
+
+    <div id="dataSection">
+      <div class="section-title">Personal data found</div>
+      <div id="dataChips" class="chips"></div>
+    </div>
+
+    <div id="aiSection" style="margin-top:16px">
+      <div class="section-title">AI systems detected</div>
+      <div id="aiChips" class="chips"></div>
+    </div>
+
+    <div class="section-title" style="margin-top:20px">Compliance findings</div>
+    <div id="findings"></div>
+
+    <div class="section-title" style="margin-top:20px">Immediate actions</div>
+    <div class="actions-list" id="actionsList"></div>
+
+    <div style="margin-top:16px;padding:12px 14px;background:var(--sand);border-radius:8px;font-size:11.5px;color:var(--light);line-height:1.5">
+      This report is generated for informational purposes only and does not constitute legal advice. All findings should be reviewed by a qualified legal professional before reliance. Camiro is decision support, not a substitute for legal counsel.
+    </div>
+
+    <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:11px;color:var(--light)">Generated by Camiro · <span id="reportDate"></span></div>
+      <button class="pdf-btn" onclick="downloadPDF()">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2"/>
+        </svg>
+        Download PDF
+      </button>
+    </div>
+
+    <button class="scan-again" onclick="reset()">← Scan different code</button>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-text">
+    Camiro · EU regulatory intelligence · Always on ·
+    <a href="mailto:nick@camiro.ai" class="footer-link">nick@camiro.ai</a>
+  </div>
+</footer>
+
+<script>
+let currentData = null;
+let activeTab = 'paste';
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='paste')||(i===1&&tab==='upload')));
+  document.getElementById('pasteTab').classList.toggle('hidden', tab !== 'paste');
+  document.getElementById('uploadTab').classList.toggle('hidden', tab !== 'upload');
+}
+
+function loadFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileSelected').classList.remove('hidden');
+  document.getElementById('filenameInput').value = file.name;
+  const reader = new FileReader();
+  reader.onload = e => { document.getElementById('codeInput').value = e.target.result; };
+  reader.readAsText(file);
+  switchTab('paste');
+}
+
+function dragOver(e) { e.preventDefault(); document.getElementById('fileDrop').classList.add('dragover'); }
+function dragLeave() { document.getElementById('fileDrop').classList.remove('dragover'); }
+function dropFile(e) {
+  e.preventDefault();
+  dragLeave();
+  const file = e.dataTransfer.files[0];
+  if (file) { document.getElementById('fileInput').files = e.dataTransfer.files; loadFile(document.getElementById('fileInput')); }
+}
+
+function clearAll() {
+  document.getElementById('codeInput').value = '';
+  document.getElementById('filenameInput').value = '';
+  document.getElementById('fileSelected').classList.add('hidden');
+}
+
+async function runScan() {
+  const code = document.getElementById('codeInput').value.trim();
+  if (!code) { alert('Please paste some code first.'); return; }
+  const filename = document.getElementById('filenameInput').value.trim() || 'uploaded_code';
+
+  document.getElementById('inputView').classList.add('hidden');
+  document.getElementById('loadingView').classList.remove('hidden');
+
+  try {
+    const res = await fetch('/analyse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, filename })
+    });
+    const d = await res.json();
+    if (d.detail) throw new Error(d.detail);
+    currentData = d;
+    currentData._filename = filename;
+    currentData._date = new Date().toLocaleDateString('en-IE', { day:'numeric', month:'long', year:'numeric' });
+    render(d);
+  } catch(e) {
+    document.getElementById('loadingView').classList.add('hidden');
+    document.getElementById('inputView').classList.remove('hidden');
+    alert('Scan error: ' + e.message + '\n\nMake sure the server is running with a valid API key.');
+  }
+}
+
+function render(d) {
+  document.getElementById('loadingView').classList.add('hidden');
+
+  const map = {
+    prohibited:{card:'risk-prohibited',dot:'dot-prohibited',lv:'level-prohibited'},
+    high:{card:'risk-high',dot:'dot-high',lv:'level-high'},
+    limited:{card:'risk-limited',dot:'dot-limited',lv:'level-limited'},
+    minimal:{card:'risk-minimal',dot:'dot-minimal',lv:'level-minimal'},
+  };
+  const r = map[d.risk_level] || map.minimal;
+  document.getElementById('riskCard').className = 'risk-card ' + r.card;
+  document.getElementById('riskDot').className = 'risk-dot ' + r.dot;
+  document.getElementById('riskLevel').className = 'risk-level ' + r.lv;
+  document.getElementById('riskLevel').textContent = (d.risk_level||'unknown').toUpperCase() + ' RISK';
+  document.getElementById('riskSummary').textContent = d.risk_summary || '';
+
+  document.getElementById('m1').textContent = d.stats?.total_issues ?? '—';
+  document.getElementById('m2').textContent = d.stats?.high_severity ?? '—';
+  document.getElementById('m3').textContent = d.stats?.medium_severity ?? '—';
+  document.getElementById('m4').textContent = d.stats?.data_categories ?? '—';
+
+  const dataArr = Array.isArray(d.data_identified) ? d.data_identified : [];
+  document.getElementById('dataChips').innerHTML = dataArr.map(t=>`<span class="chip">${t}</span>`).join('') || '<span style="font-size:12px;color:var(--light)">None identified</span>';
+
+  const aiArr = Array.isArray(d.ai_systems_detected) ? d.ai_systems_detected : [];
+  document.getElementById('aiChips').innerHTML = aiArr.map(t=>{
+    const name = typeof t==='object'&&t!==null ? (t.name||t.model||JSON.stringify(t)) : t;
+    return `<span class="chip chip-green">${name}</span>`;
+  }).join('') || '<span style="font-size:12px;color:var(--light)">None identified</span>';
+
+  const findings = Array.isArray(d.findings) ? d.findings : [];
+  document.getElementById('findings').innerHTML = findings.map(f => {
+    const cite = [f.ai_act_article, f.gdpr_article].filter(Boolean).join(' · ');
+    return `<div class="finding">
+      <div class="finding-top">
+        <div class="finding-title">${f.title||''}</div>
+        <span class="sev sev-${f.severity||'info'}">${f.severity||'info'}</span>
+      </div>
+      <div class="finding-desc">${f.description||''}</div>
+      <div class="finding-meta">
+        ${f.file_hint?`<span class="finding-hint">${f.file_hint}</span>`:''}
+        ${cite?`<span class="finding-cite">⚖ ${cite}</span>`:''}
+      </div>
+      ${f.recommendation?`<div class="finding-rec">→ ${f.recommendation}</div>`:''}
+    </div>`;
+  }).join('');
+
+  const actions = Array.isArray(d.immediate_actions) ? d.immediate_actions : [];
+  document.getElementById('actionsList').innerHTML = actions.map((a,i)=>`
+    <div class="action-item">
+      <div class="action-n">${i+1}</div>
+      <div class="action-t">${a}</div>
+    </div>`).join('');
+
+  const dateStr = new Date().toLocaleDateString('en-IE',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('reportDate').textContent = dateStr;
+
+  document.getElementById('resultsView').classList.remove('hidden');
+}
+
+function reset() {
+  document.getElementById('resultsView').classList.add('hidden');
+  document.getElementById('inputView').classList.remove('hidden');
+  currentData = null;
+}
+
+function downloadPDF() {
+  if (!currentData) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+
+  const W = 210, M = 18, CW = W - M*2;
+  const FOREST = [27, 67, 50];
+  const GREEN = [45, 106, 79];
+  const SAGE = [82, 183, 136];
+  const DARK = [28, 28, 30];
+  const SLATE = [74, 85, 104];
+  const MUTED = [107, 114, 128];
+  const PALE = [216, 243, 220];
+  const LIGHT_BG = [240, 250, 244];
+
+  let y = 0;
+
+  // Header bar
+  doc.setFillColor(...FOREST);
+  doc.rect(0, 0, W, 28, 'F');
+
+  // Tree icon (simple)
+  doc.setFillColor(...SAGE);
+  doc.ellipse(M+4, 11, 4.5, 3.5, 'F');
+  doc.ellipse(M+1.5, 14, 3, 2.2, 'F');
+  doc.ellipse(M+6.5, 14, 3, 2.2, 'F');
+  doc.setFillColor(...GREEN);
+  doc.rect(M+3.8, 16.5, 1.4, 3, 'F');
+
+  doc.setFontSize(16);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(255,255,255);
+  doc.text('Camiro', M+13, 13);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(...SAGE.map(v=>Math.min(255,v+60)));
+  doc.text('EU Regulatory Intelligence · Compliance Report', M+13, 19);
+
+  // Date and filename right side
+  doc.setFontSize(8);
+  doc.setTextColor(180,220,200);
+  doc.text(currentData._date || '', W-M, 13, {align:'right'});
+  doc.text(currentData._filename || 'code', W-M, 19, {align:'right'});
+
+  y = 36;
+
+  // Risk banner
+  const riskColors = {
+    prohibited: { bg:[254,242,242], border:[239,68,68], text:[185,28,28], label:'PROHIBITED RISK' },
+    high: { bg:[255,251,235], border:[245,158,11], text:[146,64,14], label:'HIGH RISK' },
+    limited: { bg:[239,246,255], border:[59,130,246], text:[29,78,216], label:'LIMITED RISK' },
+    minimal: { bg:[240,250,244], border:[82,183,136], text:[22,101,52], label:'MINIMAL RISK' },
+  };
+  const rc = riskColors[currentData.risk_level] || riskColors.minimal;
+  doc.setFillColor(...rc.bg);
+  doc.setDrawColor(...rc.border);
+  doc.roundedRect(M, y, CW, 22, 3, 3, 'FD');
+  doc.setFontSize(9);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(...rc.text);
+  doc.text(rc.label, M+8, y+8);
+  doc.setFontSize(10);
+  doc.setFont('helvetica','normal');
+  const summaryLines = doc.splitTextToSize(currentData.risk_summary || '', CW-16);
+  doc.text(summaryLines, M+8, y+14);
+  y += 28;
+
+  // Stats row
+  const stats = [
+    { val: String(currentData.stats?.total_issues??0), label:'Total Issues' },
+    { val: String(currentData.stats?.high_severity??0), label:'High Severity' },
+    { val: String(currentData.stats?.medium_severity??0), label:'Medium Severity' },
+    { val: String(currentData.stats?.data_categories??0), label:'Data Types' },
+  ];
+  const sw = CW/4 - 2;
+  stats.forEach((st,i) => {
+    const sx = M + i*(sw+2.67);
+    doc.setFillColor(248,249,246);
+    doc.setDrawColor(232,228,221);
+    doc.roundedRect(sx, y, sw, 16, 2, 2, 'FD');
+    doc.setFontSize(16);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(...(i===1?[185,28,28]:i===2?[146,64,14]:FOREST));
+    doc.text(st.val, sx+sw/2, y+10, {align:'center'});
+    doc.setFontSize(7);
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(...MUTED);
+    doc.text(st.label, sx+sw/2, y+14.5, {align:'center'});
+  });
+  y += 22;
+
+  // Data identified
+  const dataArr = Array.isArray(currentData.data_identified) ? currentData.data_identified : [];
+  if (dataArr.length > 0) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(...MUTED);
+    doc.text('PERSONAL DATA IDENTIFIED', M, y+4);
+    y += 7;
+    let tx = M;
+    dataArr.forEach(tag => {
+      const tw = doc.getTextWidth(tag) + 8;
+      if (tx + tw > W - M) { tx = M; y += 8; }
+      doc.setFillColor(232,228,221);
+      doc.roundedRect(tx, y-3.5, tw, 6.5, 1.5, 1.5, 'F');
+      doc.setFontSize(8);
+      doc.setFont('helvetica','normal');
+      doc.setTextColor(...SLATE);
+      doc.text(tag, tx+4, y+1.5);
+      tx += tw + 3;
+    });
+    y += 10;
+  }
+
+  // Findings
+  doc.setFontSize(8);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(...MUTED);
+  doc.text('COMPLIANCE FINDINGS', M, y+4);
+  y += 8;
+
+  const findings = Array.isArray(currentData.findings) ? currentData.findings : [];
+  findings.forEach((f, idx) => {
+    const sevColors = {
+      high:[254,242,242], medium:[255,251,235], low:[240,250,244], info:[239,246,255]
+    };
+    const sevText = {
+      high:[185,28,28], medium:[146,64,14], low:[22,101,52], info:[29,78,216]
+    };
+    const sev = f.severity||'info';
+
+    const titleLines = doc.splitTextToSize(f.title||'', CW-60);
+    const descLines = doc.splitTextToSize(f.description||'', CW-12);
+    const recLines = f.recommendation ? doc.splitTextToSize('→ '+f.recommendation, CW-20) : [];
+    const blockH = 8 + titleLines.length*5 + descLines.length*4.5 + (recLines.length>0?recLines.length*4.5+6:0) + 8;
+
+    if (y + blockH > 270) { doc.addPage(); y = 20; }
+
+    doc.setFillColor(248,249,246);
+    doc.setDrawColor(232,228,221);
+    doc.roundedRect(M, y, CW, blockH, 2, 2, 'FD');
+
+    // Severity badge
+    doc.setFillColor(...(sevColors[sev]||sevColors.info));
+    const badgeW = doc.getTextWidth(sev)+8;
+    doc.roundedRect(W-M-badgeW-2, y+4, badgeW+2, 7, 1.5, 1.5, 'F');
+    doc.setFontSize(8);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(...(sevText[sev]||sevText.info));
+    doc.text(sev, W-M-badgeW/2-1, y+9.5, {align:'center'});
+
+    // Title
+    doc.setFontSize(10);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(...DARK);
+    doc.text(titleLines, M+6, y+9);
+
+    let fy = y+9 + titleLines.length*5;
+
+    // Description
+    doc.setFontSize(9);
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(...SLATE);
+    doc.text(descLines, M+6, fy);
+    fy += descLines.length*4.5;
+
+    // Citation
+    const cite = [f.ai_act_article, f.gdpr_article].filter(Boolean).join(' · ');
+    if (cite) {
+      doc.setFontSize(8);
+      doc.setFont('helvetica','bold');
+      doc.setTextColor(...GREEN);
+      doc.text('⚖ ' + cite, M+6, fy+2);
+      fy += 6;
+    }
+
+    // Recommendation
+    if (recLines.length > 0) {
+      doc.setFillColor(...LIGHT_BG);
+      doc.roundedRect(M+4, fy+1, CW-8, recLines.length*4.5+4, 1.5, 1.5, 'F');
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica','normal');
+      doc.setTextColor(...GREEN);
+      doc.text(recLines, M+8, fy+5);
+    }
+
+    y += blockH + 4;
+  });
+
+  // Immediate actions
+  const actions = Array.isArray(currentData.immediate_actions) ? currentData.immediate_actions : [];
+  if (actions.length > 0) {
+    if (y + 20 > 270) { doc.addPage(); y = 20; }
+    doc.setFontSize(8);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(...MUTED);
+    doc.text('IMMEDIATE ACTIONS', M, y+4);
+    y += 8;
+
+    doc.setFillColor(...FOREST);
+    const actionBlockH = actions.reduce((acc,a) => acc + doc.splitTextToSize(a, CW-26).length*5 + 4, 12);
+    doc.roundedRect(M, y, CW, actionBlockH, 3, 3, 'F');
+
+    let ay = y+8;
+    actions.forEach((a,i) => {
+      const lines = doc.splitTextToSize(a, CW-26);
+      doc.setFillColor(82,183,136,0.3);
+      doc.circle(M+8, ay+1.5, 3.5, 'F');
+      doc.setFontSize(8);
+      doc.setFont('helvetica','bold');
+      doc.setTextColor(216,243,220);
+      doc.text(String(i+1), M+8, ay+2.5, {align:'center'});
+      doc.setFont('helvetica','normal');
+      doc.setTextColor(216,243,220);
+      doc.text(lines, M+15, ay+2.5);
+      ay += lines.length*5 + 4;
+    });
+    y = ay + 8;
+  }
+
+  // Footer disclaimer
+  if (y + 20 > 270) { doc.addPage(); y = 20; }
+  doc.setFillColor(245,242,236);
+  doc.roundedRect(M, y, CW, 16, 2, 2, 'F');
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(...MUTED);
+  const disclaimer = 'This report is generated for informational purposes only and does not constitute legal advice. All findings should be reviewed by a qualified legal professional. Camiro is decision support, not a substitute for legal counsel.';
+  const dLines = doc.splitTextToSize(disclaimer, CW-12);
+  doc.text(dLines, M+6, y+6);
+
+  // Page footer
+  const pageCount = doc.getNumberOfPages();
+  for (let p=1; p<=pageCount; p++) {
+    doc.setPage(p);
+    doc.setFillColor(...FOREST);
+    doc.rect(0, 287, W, 10, 'F');
+    doc.setFontSize(7);
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(180,220,200);
+    doc.text(`Camiro · EU Regulatory Intelligence · camiro.ai`, M, 293);
+    doc.text(`Page ${p} of ${pageCount}`, W-M, 293, {align:'right'});
+  }
+
+  const filename = (currentData._filename||'code').replace(/[^a-z0-9]/gi,'_');
+  doc.save(`camiro_compliance_${filename}_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+</script>
+</body>
+</html>
