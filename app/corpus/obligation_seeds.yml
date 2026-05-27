@@ -1,0 +1,757 @@
+# Camiro Obligation Seeds
+# GDPR and EU AI Act obligations for v1.
+# These are loaded into the obligations table on startup.
+
+obligations:
+
+  # ============================================================
+  # GDPR OBLIGATIONS
+  # ============================================================
+
+  - obligation_code: GDPR_ART5_PRINCIPLES
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 5"
+    title: "Data Protection Principles"
+    description: >
+      Personal data must be processed lawfully, fairly and transparently.
+      Collected for specified, explicit and legitimate purposes (purpose limitation).
+      Adequate, relevant and limited to what is necessary (data minimisation).
+      Accurate and kept up to date (accuracy).
+      Kept no longer than necessary (storage limitation).
+      Processed securely (integrity and confidentiality).
+      Controller must be able to demonstrate compliance (accountability).
+    actor_role: controller
+    control_family: data_governance
+    severity_default: critical
+    trigger_conditions:
+      - "any processing of personal data"
+    required_actions:
+      - "Document lawful basis for each processing activity"
+      - "Implement purpose limitation controls"
+      - "Apply data minimisation to all data collection"
+      - "Establish retention schedules"
+      - "Implement security measures"
+    evidence_required:
+      - "Records of processing activities (Art. 30)"
+      - "Privacy notices"
+      - "Retention policy"
+      - "Security measures documentation"
+    example_technical_signals:
+      - "personal data fields in database schema"
+      - "data collection endpoints"
+      - "absence of retention/deletion logic"
+      - "logging of personal data"
+
+  - obligation_code: GDPR_ART6_LAWFUL_BASIS
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 6"
+    title: "Lawful Basis for Processing"
+    description: >
+      Processing is lawful only if at least one of six bases applies:
+      consent, contract, legal obligation, vital interests,
+      public task, or legitimate interests.
+      Legitimate interests requires balancing test and cannot override
+      fundamental rights of data subjects.
+    actor_role: controller
+    control_family: data_governance
+    severity_default: critical
+    trigger_conditions:
+      - "any processing of personal data"
+    required_actions:
+      - "Identify and document lawful basis for each processing activity"
+      - "Document legitimate interests assessment where applicable"
+      - "Ensure consent is freely given, specific, informed and unambiguous"
+    evidence_required:
+      - "Lawful basis register"
+      - "Consent records where applicable"
+      - "Legitimate interests assessment"
+    example_technical_signals:
+      - "consent checkbox in UI"
+      - "absence of consent mechanism"
+      - "user data processing without documented basis"
+
+  - obligation_code: GDPR_ART7_CONSENT
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 7"
+    title: "Conditions for Consent"
+    description: >
+      Where processing is based on consent, controller must be able to demonstrate
+      that the data subject has consented. Consent must be freely given, specific,
+      informed and unambiguous. Subject must be able to withdraw at any time.
+      Consent cannot be bundled with terms of service.
+    actor_role: controller
+    control_family: transparency
+    severity_default: high
+    trigger_conditions:
+      - "consent used as lawful basis"
+      - "consent checkbox in codebase"
+      - "marketing or analytics processing"
+    required_actions:
+      - "Implement granular consent mechanisms"
+      - "Store consent records with timestamp and version"
+      - "Implement consent withdrawal mechanism"
+      - "Do not pre-tick consent boxes"
+    evidence_required:
+      - "Consent records"
+      - "Consent withdrawal mechanism"
+      - "Consent audit log"
+    example_technical_signals:
+      - "consent_given field"
+      - "checkbox input"
+      - "marketing_opt_in"
+      - "cookie consent banner"
+
+  - obligation_code: GDPR_ART9_SPECIAL_CATEGORY
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 9"
+    title: "Special Category Personal Data"
+    description: >
+      Processing of special category data is prohibited unless explicit consent
+      or another narrow exception applies. Special categories include:
+      racial/ethnic origin, political opinions, religious beliefs, trade union membership,
+      genetic data, biometric data for identification, health data,
+      sex life or sexual orientation.
+    actor_role: controller
+    control_family: data_governance
+    severity_default: critical
+    trigger_conditions:
+      - "health data in codebase"
+      - "ethnicity field"
+      - "disability field"
+      - "biometric data"
+      - "genetic data"
+      - "religion field"
+      - "political opinion field"
+    required_actions:
+      - "Identify explicit legal basis under Art. 9(2)"
+      - "Conduct DPIA before processing"
+      - "Implement additional security measures"
+      - "Minimise special category data collection to absolute necessity"
+    evidence_required:
+      - "Explicit consent records or Art. 9(2) legal basis documentation"
+      - "DPIA"
+      - "Security measures for special category data"
+    example_technical_signals:
+      - "health_data, medical_history, disability fields"
+      - "ethnicity, race, nationality fields"
+      - "biometric_data, facial_recognition"
+      - "religion, political_opinion fields"
+
+  - obligation_code: GDPR_ART13_14_TRANSPARENCY
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 13-14"
+    title: "Transparency and Information Obligations"
+    description: >
+      At the time of data collection, controller must provide data subjects with
+      information including: identity of controller, purposes and legal basis,
+      legitimate interests where applicable, recipients or categories of recipients,
+      international transfers, retention periods, data subject rights,
+      right to withdraw consent, right to lodge complaint.
+      For automated decision-making: meaningful information about logic involved,
+      significance and envisaged consequences.
+    actor_role: controller
+    control_family: transparency
+    severity_default: high
+    trigger_conditions:
+      - "data collection from users"
+      - "AI model making decisions about individuals"
+      - "automated scoring or profiling"
+    required_actions:
+      - "Provide privacy notice at point of collection"
+      - "Include information about automated decision-making logic"
+      - "Ensure privacy notice is accessible and plain language"
+    evidence_required:
+      - "Privacy notice"
+      - "Cookie notice"
+      - "AI decision-making disclosure"
+    example_technical_signals:
+      - "user registration form without privacy link"
+      - "AI scoring without disclosure"
+      - "absence of privacy notice reference in codebase"
+
+  - obligation_code: GDPR_ART22_AUTOMATED_DECISIONS
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 22"
+    title: "Automated Individual Decision-Making Including Profiling"
+    description: >
+      Data subjects have the right not to be subject to a decision based solely
+      on automated processing — including profiling — which produces legal effects
+      or similarly significantly affects them. Exceptions: necessary for contract,
+      authorised by law, or based on explicit consent. Even where exception applies,
+      controller must implement suitable safeguards including human review,
+      right to contest, and right to obtain explanation.
+    actor_role: controller
+    control_family: human_oversight
+    severity_default: critical
+    trigger_conditions:
+      - "automated decision that affects a person"
+      - "AI scoring or ranking of individuals"
+      - "automated approval or rejection"
+      - "no human review path in code"
+    required_actions:
+      - "Implement mandatory human review before decisions take effect"
+      - "Provide mechanism for data subject to contest decisions"
+      - "Provide meaningful explanation of decision logic"
+      - "Document legal basis for automated decision-making"
+    evidence_required:
+      - "Human review workflow documentation"
+      - "Contestation mechanism"
+      - "Decision explanation capability"
+      - "Lawful basis documentation"
+    example_technical_signals:
+      - "auto_reject, auto_approve functions"
+      - "score < threshold leading to rejection"
+      - "no human_review flag or approval step"
+      - "batch_reject, bulk_decision functions"
+
+  - obligation_code: GDPR_ART25_PRIVACY_BY_DESIGN
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 25"
+    title: "Data Protection by Design and by Default"
+    description: >
+      Both at the time of determining means of processing and at the time of
+      processing itself, controller must implement appropriate technical and
+      organisational measures to implement data protection principles effectively
+      and integrate necessary safeguards into processing. By default, only personal
+      data necessary for each specific purpose shall be processed.
+    actor_role: controller
+    control_family: data_governance
+    severity_default: high
+    trigger_conditions:
+      - "new system design"
+      - "data collection beyond stated purpose"
+      - "excessive data fields"
+    required_actions:
+      - "Apply data minimisation at design stage"
+      - "Implement pseudonymisation where possible"
+      - "Apply privacy-enhancing technologies"
+      - "Set data protection defaults"
+    evidence_required:
+      - "Privacy by design documentation"
+      - "Data minimisation review"
+    example_technical_signals:
+      - "excessive personal data fields in schema"
+      - "collection of data not used in any processing"
+      - "no pseudonymisation or anonymisation"
+
+  - obligation_code: GDPR_ART28_PROCESSOR
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 28"
+    title: "Processor Obligations and Data Processing Agreements"
+    description: >
+      Where processing is carried out on behalf of a controller, processor must
+      provide sufficient guarantees. Controller must only use processors with
+      a binding Data Processing Agreement covering: subject matter, duration,
+      nature and purpose of processing, type of data, obligations and rights.
+      Processor may not engage sub-processors without prior authorisation.
+    actor_role: controller
+    control_family: vendor_risk
+    severity_default: high
+    trigger_conditions:
+      - "third-party API call sending personal data"
+      - "cloud service processing personal data"
+      - "AI model provider receiving personal data"
+    required_actions:
+      - "Enter Data Processing Agreement with each processor"
+      - "Conduct due diligence on processor security"
+      - "Audit sub-processor list"
+      - "Ensure DPA covers AI model provider API calls"
+    evidence_required:
+      - "Signed DPAs with all processors"
+      - "Processor due diligence records"
+      - "Sub-processor list"
+    example_technical_signals:
+      - "openai.chat.completions with personal data"
+      - "anthropic.messages with personal data"
+      - "third-party API calls with user data"
+      - "AWS, Google Cloud, Azure processing personal data"
+
+  - obligation_code: GDPR_ART30_ROPA
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 30"
+    title: "Records of Processing Activities"
+    description: >
+      Controllers and processors must maintain records of processing activities.
+      Records must include: name and contact details of controller, purposes,
+      categories of data subjects and personal data, recipients, international
+      transfers, envisaged time limits for erasure, security measures.
+    actor_role: controller
+    control_family: data_governance
+    severity_default: high
+    trigger_conditions:
+      - "any processing of personal data"
+    required_actions:
+      - "Maintain written records of all processing activities"
+      - "Keep records updated as processing changes"
+      - "Make records available to supervisory authority on request"
+    evidence_required:
+      - "Records of Processing Activities document"
+    example_technical_signals:
+      - "new data processing endpoint"
+      - "new database table with personal data"
+      - "new AI system processing personal data"
+
+  - obligation_code: GDPR_ART32_SECURITY
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 32"
+    title: "Security of Processing"
+    description: >
+      Controller and processor must implement appropriate technical and
+      organisational measures to ensure a level of security appropriate to the risk.
+      Measures should include pseudonymisation, encryption, resilience of systems,
+      ability to restore availability, process for regularly testing effectiveness.
+    actor_role: controller
+    control_family: security
+    severity_default: high
+    trigger_conditions:
+      - "any processing of personal data"
+      - "absence of encryption"
+      - "absence of authentication"
+    required_actions:
+      - "Implement encryption at rest and in transit"
+      - "Implement access controls and authentication"
+      - "Conduct regular security testing"
+      - "Implement breach detection capability"
+    evidence_required:
+      - "Security measures documentation"
+      - "Penetration test results"
+      - "Access control policy"
+    example_technical_signals:
+      - "no encryption of sensitive fields"
+      - "no authentication on endpoints"
+      - "personal data in logs"
+      - "hardcoded credentials"
+
+  - obligation_code: GDPR_ART33_BREACH_NOTIFICATION
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 33"
+    title: "Breach Notification to Supervisory Authority"
+    description: >
+      In case of personal data breach, controller must notify supervisory authority
+      within 72 hours of becoming aware, unless breach is unlikely to result in risk.
+      Notification must include: nature of breach, categories and numbers affected,
+      contact details of DPO, likely consequences, measures taken.
+    actor_role: controller
+    control_family: incident_reporting
+    severity_default: high
+    trigger_conditions:
+      - "incident handling system"
+      - "personal data breach scenario"
+    required_actions:
+      - "Implement breach detection and logging"
+      - "Establish 72-hour notification procedure"
+      - "Maintain breach register"
+    evidence_required:
+      - "Breach response procedure"
+      - "Breach register"
+    example_technical_signals:
+      - "no breach detection logic"
+      - "no incident logging"
+      - "no alerting on unauthorised access"
+
+  - obligation_code: GDPR_ART35_DPIA
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 35"
+    title: "Data Protection Impact Assessment"
+    description: >
+      DPIA is required before processing likely to result in high risk, especially:
+      systematic and extensive profiling with legal or similar effects,
+      large-scale processing of special category data,
+      systematic monitoring of publicly accessible areas.
+      DPIA must describe processing, assess necessity and proportionality,
+      assess risks to rights and freedoms, and identify measures to address risks.
+    actor_role: controller
+    control_family: data_governance
+    severity_default: critical
+    trigger_conditions:
+      - "automated decision-making with legal effects"
+      - "large-scale processing of special category data"
+      - "AI system making decisions about individuals"
+      - "profiling or scoring of individuals"
+    required_actions:
+      - "Conduct DPIA before deploying high-risk processing"
+      - "Consult supervisory authority where residual risk remains high"
+      - "Keep DPIA updated as processing changes"
+    evidence_required:
+      - "Completed DPIA document"
+      - "DPO consultation records"
+    example_technical_signals:
+      - "AI scoring system with no DPIA reference"
+      - "special category data processing"
+      - "large-scale profiling"
+      - "automated rejection system"
+
+  - obligation_code: GDPR_ART44_49_TRANSFERS
+    legal_source_short_name: GDPR
+    citation_label: "GDPR Art. 44-49"
+    title: "International Transfers of Personal Data"
+    description: >
+      Transfer of personal data to third countries requires adequate safeguards:
+      adequacy decision, standard contractual clauses, binding corporate rules,
+      or another mechanism. Transfer without safeguards is prohibited.
+      Post-Schrems II: supplementary measures may be required even with SCCs.
+    actor_role: controller
+    control_family: vendor_risk
+    severity_default: high
+    trigger_conditions:
+      - "API call to US or non-EEA service"
+      - "cloud provider outside EEA"
+      - "AI model provider in US"
+    required_actions:
+      - "Identify all transfers to third countries"
+      - "Implement SCCs or other transfer mechanism"
+      - "Conduct transfer impact assessment"
+      - "Consider supplementary technical measures"
+    evidence_required:
+      - "Transfer mapping"
+      - "SCCs or other transfer mechanism"
+      - "Transfer impact assessment"
+    example_technical_signals:
+      - "openai.com API calls"
+      - "anthropic.com API calls"
+      - "us-east-1 region references"
+      - "non-EEA cloud endpoints"
+
+  # ============================================================
+  # EU AI ACT OBLIGATIONS
+  # ============================================================
+
+  - obligation_code: AI_ACT_ART5_PROHIBITED
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Art. 5"
+    title: "Prohibited AI Practices"
+    description: >
+      The following AI practices are prohibited:
+      Subliminal techniques manipulating behaviour against free will.
+      Exploitation of vulnerabilities of specific groups.
+      Social scoring by public authorities.
+      Real-time remote biometric identification in public spaces (with narrow exceptions).
+      Emotion recognition in workplace or educational settings.
+      Biometric categorisation inferring sensitive characteristics.
+      AI systems that pose unacceptable risk to fundamental rights.
+      Prohibited practices have been in force since February 2025.
+    actor_role: provider
+    control_family: human_oversight
+    severity_default: critical
+    trigger_conditions:
+      - "biometric identification in public spaces"
+      - "emotion recognition at work or education"
+      - "social scoring system"
+      - "manipulation of user behaviour"
+      - "exploitation of vulnerabilities"
+    required_actions:
+      - "Immediately cease development or deployment of prohibited AI system"
+      - "Conduct legal review to confirm prohibition applies"
+      - "Document non-use of prohibited practices"
+    evidence_required:
+      - "Legal review confirming no prohibited practice"
+      - "System design documentation"
+    example_technical_signals:
+      - "facial_recognition in public space"
+      - "emotion_detection in workplace"
+      - "social_score function"
+      - "vulnerability_exploitation targeting"
+      - "manipulation_score targeting children or elderly"
+
+  - obligation_code: AI_ACT_ART6_HIGH_RISK
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Art. 6 + Annex III"
+    title: "High-Risk AI System Classification"
+    description: >
+      AI systems listed in Annex III are high-risk if they pose significant risk
+      to health, safety or fundamental rights. Annex III includes:
+      biometric identification and categorisation,
+      critical infrastructure management,
+      education and vocational training (access, assessment),
+      employment and worker management (recruitment, promotion, termination, task allocation),
+      access to essential services (credit scoring, insurance, benefits),
+      law enforcement,
+      migration and border control,
+      administration of justice.
+      High-risk obligations apply from August 2026 for most Annex III categories.
+      Note: AI Act Omnibus proposal may affect some deadlines. Verify with counsel.
+    actor_role: provider
+    control_family: data_governance
+    severity_default: critical
+    trigger_conditions:
+      - "AI used in recruitment or hiring"
+      - "AI used in credit scoring"
+      - "AI used in education access decisions"
+      - "AI used in worker monitoring or task allocation"
+      - "AI used in insurance risk assessment"
+      - "AI used in benefits or social services decisions"
+      - "AI used in law enforcement"
+    required_actions:
+      - "Classify AI system as high-risk under Annex III"
+      - "Implement risk management system (Art. 9)"
+      - "Establish data governance (Art. 10)"
+      - "Create technical documentation (Art. 11)"
+      - "Implement logging (Art. 12)"
+      - "Ensure transparency (Art. 13)"
+      - "Implement human oversight (Art. 14)"
+      - "Conduct conformity assessment (Art. 19)"
+      - "Register in EU database (Art. 27)"
+    evidence_required:
+      - "High-risk classification assessment"
+      - "Risk management system documentation"
+      - "Technical documentation"
+      - "Conformity assessment"
+      - "EU database registration"
+    example_technical_signals:
+      - "recruitment_score, candidate_rank functions"
+      - "credit_score, loan_approval functions"
+      - "employee_performance_score"
+      - "benefit_eligibility_check"
+      - "risk_assessment for insurance"
+
+  - obligation_code: AI_ACT_ART9_RISK_MANAGEMENT
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Art. 9"
+    title: "Risk Management System for High-Risk AI"
+    description: >
+      Providers of high-risk AI systems must establish, implement, document and
+      maintain a risk management system. This is a continuous iterative process
+      throughout the lifecycle. Must identify and analyse known and reasonably
+      foreseeable risks, estimate and evaluate risks, adopt risk mitigation measures,
+      test AI system for effectiveness of risk management.
+    actor_role: provider
+    control_family: data_governance
+    severity_default: high
+    trigger_conditions:
+      - "high-risk AI system classification"
+    required_actions:
+      - "Establish documented risk management system"
+      - "Conduct risk identification and analysis"
+      - "Implement risk mitigation measures"
+      - "Test effectiveness throughout lifecycle"
+    evidence_required:
+      - "Risk management system documentation"
+      - "Risk register"
+      - "Testing records"
+
+  - obligation_code: AI_ACT_ART10_DATA_GOVERNANCE
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Art. 10"
+    title: "Data Governance for High-Risk AI"
+    description: >
+      High-risk AI systems using training, validation and testing data sets must
+      have data governance and management practices covering:
+      design choices, data collection, preparation, assessment of availability,
+      quantity and suitability, bias examination, data gaps or shortcomings.
+      Training data must be relevant, representative, and free of errors to the
+      extent possible.
+    actor_role: provider
+    control_family: data_governance
+    severity_default: high
+    trigger_conditions:
+      - "high-risk AI system with training data"
+      - "ML model training"
+    required_actions:
+      - "Document data governance practices"
+      - "Conduct bias assessment on training data"
+      - "Document data sources and characteristics"
+      - "Implement data quality controls"
+    evidence_required:
+      - "Data governance documentation"
+      - "Bias assessment"
+      - "Dataset documentation"
+
+  - obligation_code: AI_ACT_ART11_TECHNICAL_DOCS
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Art. 11"
+    title: "Technical Documentation for High-Risk AI"
+    description: >
+      Before placing on market, provider must draw up technical documentation
+      demonstrating system meets requirements. Documentation must include:
+      general description, detailed description of elements and development process,
+      monitoring/functioning/control information, risk management documentation,
+      changes made during lifecycle, standards applied, conformity assessment,
+      EU declaration of conformity, affixed CE marking.
+    actor_role: provider
+    control_family: data_governance
+    severity_default: high
+    trigger_conditions:
+      - "high-risk AI system before deployment"
+    required_actions:
+      - "Prepare technical documentation per Annex IV"
+      - "Keep documentation updated throughout lifecycle"
+      - "Make available to supervisory authority on request"
+    evidence_required:
+      - "Technical documentation package (Annex IV)"
+
+  - obligation_code: AI_ACT_ART12_LOGGING
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Art. 12"
+    title: "Record-Keeping and Logging for High-Risk AI"
+    description: >
+      High-risk AI systems must be designed and developed with capabilities
+      enabling automatic recording of events (logs) throughout lifetime.
+      Logging must be appropriate to the purpose of the system.
+      Logs must be kept for period appropriate to use case.
+      Deployer must keep logs for at least 6 months unless law requires otherwise.
+    actor_role: provider
+    control_family: logging
+    severity_default: high
+    trigger_conditions:
+      - "high-risk AI system"
+      - "absence of logging"
+    required_actions:
+      - "Implement automatic event logging"
+      - "Include: activation, decision inputs, outputs, human oversight actions"
+      - "Define log retention period"
+      - "Ensure logs cannot be tampered with"
+    evidence_required:
+      - "Logging specification"
+      - "Log retention policy"
+      - "Sample audit logs"
+    example_technical_signals:
+      - "no logging of AI model calls"
+      - "no logging of automated decisions"
+      - "no audit trail for AI outputs"
+
+  - obligation_code: AI_ACT_ART13_TRANSPARENCY
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Art. 13"
+    title: "Transparency and Information for High-Risk AI Deployers"
+    description: >
+      High-risk AI systems must be designed to ensure operation is sufficiently
+      transparent for deployers to understand and use appropriately.
+      Must include instructions for use covering: identity and contact details of provider,
+      system capabilities and limitations, performance metrics, known risks,
+      technical measures for human oversight, intended purpose, data requirements.
+    actor_role: provider
+    control_family: transparency
+    severity_default: high
+    trigger_conditions:
+      - "high-risk AI system"
+    required_actions:
+      - "Prepare instructions for use"
+      - "Document system capabilities and limitations"
+      - "Document performance metrics and accuracy"
+      - "Document known risks and failure modes"
+    evidence_required:
+      - "Instructions for use document"
+      - "Performance benchmarks"
+      - "Known limitations documentation"
+
+  - obligation_code: AI_ACT_ART14_HUMAN_OVERSIGHT
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Art. 14"
+    title: "Human Oversight of High-Risk AI"
+    description: >
+      High-risk AI systems must be designed and developed with human oversight measures.
+      Natural persons must be able to: fully understand system capabilities and limitations,
+      monitor operation, detect anomalies and malfunctions, intervene or interrupt,
+      not over-rely on output (automation bias), interpret output correctly.
+      Oversight persons must have authority, knowledge and tools to perform oversight.
+    actor_role: provider
+    control_family: human_oversight
+    severity_default: critical
+    trigger_conditions:
+      - "high-risk AI system"
+      - "automated decision with no human review"
+      - "AI output directly triggering action"
+    required_actions:
+      - "Implement human review step before decisions take effect"
+      - "Design UI to support meaningful human oversight"
+      - "Document human oversight roles and responsibilities"
+      - "Train oversight personnel"
+      - "Implement stop/override mechanism"
+    evidence_required:
+      - "Human oversight design documentation"
+      - "Oversight personnel training records"
+      - "Override/intervention logs"
+    example_technical_signals:
+      - "no human_review step before action"
+      - "auto_reject without human flag"
+      - "fully automated pipeline with no oversight hook"
+
+  - obligation_code: AI_ACT_ART26_DEPLOYER
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Art. 26"
+    title: "Deployer Obligations for High-Risk AI"
+    description: >
+      Deployers of high-risk AI systems must:
+      Use systems in accordance with instructions for use.
+      Assign human oversight to natural persons with competence, authority and resources.
+      Ensure input data is relevant and sufficiently representative.
+      Monitor operation and report serious incidents to provider and market surveillance authority.
+      Keep logs generated by system for at least 6 months.
+      Conduct fundamental rights impact assessment before deployment in certain cases.
+    actor_role: deployer
+    control_family: human_oversight
+    severity_default: high
+    trigger_conditions:
+      - "deploying third-party high-risk AI system"
+      - "using AI model API for decisions about individuals"
+    required_actions:
+      - "Follow provider instructions for use"
+      - "Assign competent oversight person"
+      - "Monitor system performance"
+      - "Establish incident reporting procedure"
+      - "Retain logs for minimum 6 months"
+    evidence_required:
+      - "Oversight assignment documentation"
+      - "Monitoring records"
+      - "Incident reporting procedure"
+      - "Log retention records"
+
+  - obligation_code: AI_ACT_ART50_TRANSPARENCY
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Art. 50"
+    title: "Transparency Obligations for Certain AI Systems"
+    description: >
+      Providers of AI systems interacting with natural persons must ensure persons
+      are informed they are interacting with an AI, unless obvious from context.
+      Providers of emotion recognition or biometric categorisation systems must
+      inform natural persons of operation.
+      Providers of AI-generated content must ensure output is marked as AI-generated.
+      These obligations apply from August 2026.
+    actor_role: provider
+    control_family: transparency
+    severity_default: medium
+    trigger_conditions:
+      - "chatbot or conversational AI"
+      - "AI system interacting with users"
+      - "emotion recognition"
+      - "AI-generated content"
+    required_actions:
+      - "Disclose AI nature to users at start of interaction"
+      - "Label AI-generated content"
+      - "Disclose emotion recognition or biometric systems"
+    evidence_required:
+      - "AI disclosure mechanism"
+      - "Content labelling system"
+    example_technical_signals:
+      - "chatbot with no AI disclosure"
+      - "AI-generated text without label"
+      - "emotion_detection without user notification"
+
+  - obligation_code: AI_ACT_GPAI_OBLIGATIONS
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Title VIII — GPAI"
+    title: "General-Purpose AI Model Obligations"
+    description: >
+      Providers of general-purpose AI models must:
+      Prepare technical documentation.
+      Provide information to downstream providers.
+      Establish copyright compliance policy.
+      Publish summary of training data.
+      For models with systemic risk: conduct adversarial testing, report serious incidents,
+      ensure cybersecurity protections, report energy consumption.
+      GPAI obligations apply from August 2025.
+    actor_role: provider
+    control_family: data_governance
+    severity_default: high
+    trigger_conditions:
+      - "developing or placing GPAI model on market"
+      - "fine-tuning or deploying foundation model"
+    required_actions:
+      - "Prepare GPAI technical documentation"
+      - "Publish training data summary"
+      - "Implement copyright compliance policy"
+      - "Conduct adversarial testing if systemic risk threshold met"
+    evidence_required:
+      - "GPAI technical documentation"
+      - "Training data summary"
+      - "Copyright compliance policy"

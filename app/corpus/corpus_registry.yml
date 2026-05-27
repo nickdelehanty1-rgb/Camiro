@@ -1,0 +1,643 @@
+# Camiro Regulatory Corpus Registry
+# All legal and regulatory sources Camiro should eventually ingest.
+# ingest_enabled: true = active in v1
+# ingest_enabled: false = registered but not yet ingested
+
+sources:
+
+  # ============================================================
+  # MODULE A — PRIVACY / DATA PROTECTION
+  # ============================================================
+
+  - short_name: GDPR
+    title: General Data Protection Regulation
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32016R0679
+    official_reference: "Regulation (EU) 2016/679"
+    sector: privacy
+    status: in_force
+    effective_from: "2018-05-25"
+    module: privacy
+    priority: core
+    ingest_enabled: true
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R0679"
+    notes: "Core regulation. Lead enforcer for US tech: Irish DPC."
+
+  - short_name: IE_DPA_2018
+    title: Data Protection Act 2018
+    source_type: act
+    jurisdiction: Ireland
+    official_reference: "No. 7 of 2018"
+    sector: privacy
+    status: in_force
+    effective_from: "2018-05-25"
+    module: privacy
+    priority: core
+    ingest_enabled: true
+    source_url: "https://www.irishstatutebook.ie/eli/2018/act/7/enacted/en/html"
+    notes: "Irish transposition of GDPR. Governs DPC powers."
+
+  - short_name: LED
+    title: Law Enforcement Directive
+    source_type: directive
+    jurisdiction: EU
+    celex_id: 32016L0680
+    official_reference: "Directive (EU) 2016/680"
+    sector: privacy_public_sector
+    status: in_force
+    module: privacy_public_sector
+    priority: later
+    ingest_enabled: false
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016L0680"
+
+  - short_name: EPRIVACY_DIR
+    title: ePrivacy Directive
+    source_type: directive
+    jurisdiction: EU
+    celex_id: 32002L0058
+    official_reference: "Directive 2002/58/EC as amended"
+    sector: eprivacy
+    status: in_force
+    module: eprivacy
+    priority: core
+    ingest_enabled: true
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32002L0058"
+    notes: "Covers cookies, tracking, electronic communications."
+
+  - short_name: IE_EPRIVACY_REGS
+    title: Irish ePrivacy Regulations
+    source_type: statutory_instrument
+    jurisdiction: Ireland
+    official_reference: "S.I. No. 336/2011"
+    sector: eprivacy
+    status: in_force
+    module: eprivacy_ireland
+    priority: core
+    ingest_enabled: true
+    source_url: "https://www.irishstatutebook.ie/eli/2011/si/336/made/en/html"
+    notes: "Irish implementation of ePrivacy Directive."
+
+  - short_name: EDPB_GUIDELINES
+    title: EDPB Guidelines, Recommendations and Best Practices
+    source_type: guidance
+    jurisdiction: EDPB
+    sector: privacy
+    status: in_force
+    module: privacy_guidance
+    priority: core
+    ingest_enabled: true
+    source_url: "https://edpb.europa.eu/our-work-tools/general-guidance/guidelines-recommendations-best-practices_en"
+    notes: >
+      Includes: consent, transparency, automated decisions/profiling, DPIA,
+      breach notification, data subject rights, international transfers,
+      controller/processor, data protection by design, legitimate interests.
+
+  - short_name: DPC_GUIDANCE
+    title: Irish Data Protection Commission Guidance
+    source_type: regulator_notice
+    jurisdiction: Ireland
+    sector: privacy
+    status: in_force
+    module: privacy_ireland_guidance
+    priority: core
+    ingest_enabled: true
+    source_url: "https://www.dataprotection.ie/en/guidance-landing"
+    notes: >
+      Includes: cookies/tracking, breach notification, DSARs,
+      children's data, enforcement decisions index.
+
+  # ============================================================
+  # MODULE B — AI GOVERNANCE / AI ACT
+  # ============================================================
+
+  - short_name: AI_ACT
+    title: EU Artificial Intelligence Act
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32024R1689
+    official_reference: "Regulation (EU) 2024/1689"
+    sector: ai
+    status: in_force
+    effective_from: "2024-08-01"
+    module: ai
+    priority: core
+    ingest_enabled: true
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689"
+    notes: >
+      Risk-based. Prohibited practices: Feb 2025.
+      GPAI obligations: Aug 2025.
+      High-risk (some Annex III): Aug 2026.
+      Other high-risk: Dec 2027 / Aug 2028.
+      Ireland: 15 competent authorities. AI Office of Ireland from Aug 2026.
+
+  - short_name: AI_ACT_GUIDANCE
+    title: EU AI Act Commission Guidance Documents
+    source_type: guidance
+    jurisdiction: EU
+    sector: ai
+    status: in_force
+    module: ai_guidance
+    priority: core
+    ingest_enabled: true
+    source_url: "https://digital-strategy.ec.europa.eu/en/policies/artificial-intelligence"
+    notes: >
+      Includes: definition of AI system, prohibited practices,
+      GPAI obligations, high-risk classification, Article 50 transparency,
+      General-Purpose AI Code of Practice.
+
+  - short_name: ISO_42001
+    title: "ISO/IEC 42001 — AI Management Systems"
+    source_type: standard
+    jurisdiction: ISO
+    sector: ai
+    status: in_force
+    module: ai_standards
+    priority: later
+    ingest_enabled: false
+    notes: "Paid standard. Store metadata only unless user provides licensed text."
+
+  - short_name: NIST_AI_RMF
+    title: NIST AI Risk Management Framework
+    source_type: framework
+    jurisdiction: US
+    sector: ai
+    status: in_force
+    module: ai_frameworks
+    priority: later
+    ingest_enabled: false
+    source_url: "https://www.nist.gov/system/files/documents/2023/01/26/AI%20RMF%20Playbook.pdf"
+
+  - short_name: OWASP_LLM
+    title: OWASP Top 10 for LLM Applications
+    source_type: framework
+    jurisdiction: OWASP
+    sector: ai
+    status: in_force
+    module: ai_security
+    priority: later
+    ingest_enabled: false
+    source_url: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+
+  - short_name: MITRE_ATLAS
+    title: MITRE ATLAS — Adversarial Threat Landscape for AI Systems
+    source_type: framework
+    jurisdiction: MITRE
+    sector: ai
+    status: in_force
+    module: ai_security
+    priority: later
+    ingest_enabled: false
+    source_url: "https://atlas.mitre.org/"
+
+  # ============================================================
+  # MODULE C — CYBERSECURITY / OPERATIONAL RESILIENCE
+  # ============================================================
+
+  - short_name: NIS2
+    title: NIS2 Directive
+    source_type: directive
+    jurisdiction: EU
+    celex_id: 32022L2555
+    official_reference: "Directive (EU) 2022/2555"
+    sector: cybersecurity
+    status: in_force
+    effective_from: "2024-10-17"
+    module: cybersecurity
+    priority: expansion
+    ingest_enabled: false
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32022L2555"
+
+  - short_name: NIS2_TECHNICAL_RTS
+    title: "Commission Implementing Regulation (EU) 2024/2690 — NIS2 Technical Requirements"
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32024R2690
+    sector: cybersecurity
+    status: in_force
+    module: cybersecurity
+    priority: expansion
+    ingest_enabled: false
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R2690"
+
+  - short_name: CRA
+    title: Cyber Resilience Act
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32024R2847
+    official_reference: "Regulation (EU) 2024/2847"
+    sector: cyber_resilience
+    status: in_force
+    module: cyber_resilience
+    priority: expansion
+    ingest_enabled: false
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R2847"
+
+  - short_name: DORA
+    title: Digital Operational Resilience Act
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32022R2554
+    official_reference: "Regulation (EU) 2022/2554"
+    sector: financial_operational_resilience
+    status: in_force
+    effective_from: "2025-01-17"
+    module: financial_operational_resilience
+    priority: expansion
+    ingest_enabled: false
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32022R2554"
+    notes: "Applies to financial entities. CBI lead in Ireland."
+
+  - short_name: DORA_GUIDANCE
+    title: DORA Technical Standards and Regulator Guidance
+    source_type: guidance
+    jurisdiction: EU
+    sector: financial_operational_resilience
+    status: in_force
+    module: financial_operational_resilience
+    priority: expansion
+    ingest_enabled: false
+    notes: "Includes ESA RTS/ITS packages, CBI DORA guidance, incident reporting."
+
+  # ============================================================
+  # MODULE D — DIGITAL PLATFORMS / ONLINE SERVICES
+  # ============================================================
+
+  - short_name: DSA
+    title: Digital Services Act
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32022R2065
+    official_reference: "Regulation (EU) 2022/2065"
+    sector: platform_regulation
+    status: in_force
+    effective_from: "2024-02-17"
+    module: platform_regulation
+    priority: expansion
+    ingest_enabled: false
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32022R2065"
+
+  - short_name: DMA
+    title: Digital Markets Act
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32022R1925
+    official_reference: "Regulation (EU) 2022/1925"
+    sector: platform_regulation
+    status: in_force
+    effective_from: "2023-05-02"
+    module: platform_regulation
+    priority: expansion
+    ingest_enabled: false
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32022R1925"
+
+  - short_name: P2B
+    title: Platform-to-Business Regulation
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32019R1150
+    official_reference: "Regulation (EU) 2019/1150"
+    sector: platform_regulation
+    status: in_force
+    module: platform_regulation
+    priority: later
+    ingest_enabled: false
+
+  # ============================================================
+  # MODULE E — DATA ECONOMY / DIGITAL IDENTITY
+  # ============================================================
+
+  - short_name: DGA
+    title: Data Governance Act
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32022R0868
+    official_reference: "Regulation (EU) 2022/868"
+    sector: data_governance
+    status: in_force
+    effective_from: "2023-09-24"
+    module: data_governance
+    priority: expansion
+    ingest_enabled: false
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32022R0868"
+
+  - short_name: DATA_ACT
+    title: Data Act
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32023R2854
+    official_reference: "Regulation (EU) 2023/2854"
+    sector: data_access
+    status: in_force
+    effective_from: "2025-09-12"
+    module: data_access
+    priority: expansion
+    ingest_enabled: false
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023R2854"
+
+  - short_name: EIDAS
+    title: eIDAS Regulation
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32014R0910
+    official_reference: "Regulation (EU) No 910/2014"
+    sector: digital_identity
+    status: in_force
+    module: digital_identity
+    priority: later
+    ingest_enabled: false
+
+  - short_name: EIDAS2
+    title: European Digital Identity Framework
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32024R1183
+    official_reference: "Regulation (EU) 2024/1183"
+    sector: digital_identity
+    status: in_force
+    module: digital_identity
+    priority: later
+    ingest_enabled: false
+
+  # ============================================================
+  # MODULE F — FINANCIAL REGULATION / FINTECH
+  # ============================================================
+
+  - short_name: MICA
+    title: Markets in Crypto-Assets Regulation
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32023R1114
+    official_reference: "Regulation (EU) 2023/1114"
+    sector: crypto
+    status: in_force
+    module: crypto
+    priority: expansion_financial
+    ingest_enabled: false
+    source_url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023R1114"
+
+  - short_name: TFR_CRYPTO
+    title: Transfer of Funds Regulation / Crypto Travel Rule
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32023R1113
+    official_reference: "Regulation (EU) 2023/1113"
+    sector: aml_crypto
+    status: in_force
+    module: aml_crypto
+    priority: expansion_financial
+    ingest_enabled: false
+
+  - short_name: PSD2
+    title: Payment Services Directive 2
+    source_type: directive
+    jurisdiction: EU
+    celex_id: 32015L2366
+    official_reference: "Directive (EU) 2015/2366"
+    sector: payments
+    status: in_force
+    module: payments
+    priority: expansion_financial
+    ingest_enabled: false
+
+  - short_name: SCA_RTS
+    title: Strong Customer Authentication RTS
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32018R0389
+    official_reference: "Commission Delegated Regulation (EU) 2018/389"
+    sector: payments_security
+    status: in_force
+    module: payments_security
+    priority: expansion_financial
+    ingest_enabled: false
+
+  - short_name: AML_REG
+    title: AML Regulation
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32024R1624
+    official_reference: "Regulation (EU) 2024/1624"
+    sector: aml
+    status: in_force
+    module: aml
+    priority: expansion_financial
+    ingest_enabled: false
+
+  - short_name: AMLD6
+    title: Sixth Anti-Money Laundering Directive
+    source_type: directive
+    jurisdiction: EU
+    celex_id: 32024L1640
+    official_reference: "Directive (EU) 2024/1640"
+    sector: aml
+    status: in_force
+    module: aml
+    priority: expansion_financial
+    ingest_enabled: false
+
+  - short_name: AMLA
+    title: Anti-Money Laundering Authority Regulation
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32024R1620
+    official_reference: "Regulation (EU) 2024/1620"
+    sector: aml
+    status: in_force
+    module: aml
+    priority: expansion_financial
+    ingest_enabled: false
+
+  - short_name: CBI_CPC_2025
+    title: Central Bank of Ireland Consumer Protection Code 2025
+    source_type: regulator_notice
+    jurisdiction: Ireland
+    sector: financial_consumer_protection
+    status: in_force
+    module: financial_consumer_protection
+    priority: expansion_financial
+    ingest_enabled: false
+    source_url: "https://www.centralbank.ie/regulation/consumer-protection/consumer-protection-code"
+
+  - short_name: CBI_IAF
+    title: Central Bank of Ireland Individual Accountability Framework / SEAR
+    source_type: regulator_notice
+    jurisdiction: Ireland
+    sector: financial_governance
+    status: in_force
+    module: financial_governance
+    priority: expansion_financial
+    ingest_enabled: false
+    source_url: "https://www.centralbank.ie/regulation/individual-accountability-framework"
+
+  # ============================================================
+  # MODULE G — CONSUMER / PRODUCT / ACCESSIBILITY
+  # ============================================================
+
+  - short_name: DCDS_DIR
+    title: Digital Content and Digital Services Directive
+    source_type: directive
+    jurisdiction: EU
+    celex_id: 32019L0770
+    official_reference: "Directive (EU) 2019/770"
+    sector: consumer_digital_services
+    status: in_force
+    module: consumer_digital_services
+    priority: later
+    ingest_enabled: false
+
+  - short_name: OMNIBUS_DIR
+    title: Omnibus Directive
+    source_type: directive
+    jurisdiction: EU
+    celex_id: 32019L2161
+    official_reference: "Directive (EU) 2019/2161"
+    sector: consumer_protection
+    status: in_force
+    module: consumer_protection
+    priority: later
+    ingest_enabled: false
+
+  - short_name: EAA
+    title: European Accessibility Act
+    source_type: directive
+    jurisdiction: EU
+    celex_id: 32019L0882
+    official_reference: "Directive (EU) 2019/882"
+    sector: accessibility
+    status: in_force
+    module: accessibility
+    priority: later
+    ingest_enabled: false
+
+  - short_name: PLD
+    title: Product Liability Directive
+    source_type: directive
+    jurisdiction: EU
+    celex_id: 32024L2853
+    official_reference: "Directive (EU) 2024/2853"
+    sector: product_liability
+    status: in_force
+    module: product_liability
+    priority: later
+    ingest_enabled: false
+
+  - short_name: GPSR
+    title: General Product Safety Regulation
+    source_type: regulation
+    jurisdiction: EU
+    celex_id: 32023R0988
+    official_reference: "Regulation (EU) 2023/988"
+    sector: product_safety
+    status: in_force
+    module: product_safety
+    priority: later
+    ingest_enabled: false
+
+  # ============================================================
+  # MODULE H — STANDARDS / CONTROL FRAMEWORKS (metadata only)
+  # ============================================================
+
+  - short_name: ISO_27001
+    title: "ISO/IEC 27001 — Information Security Management"
+    source_type: standard
+    jurisdiction: ISO
+    sector: security
+    status: in_force
+    module: security_standards
+    priority: later
+    ingest_enabled: false
+    notes: "Paid standard. Metadata and mappings only."
+
+  - short_name: ISO_27701
+    title: "ISO/IEC 27701 — Privacy Information Management"
+    source_type: standard
+    jurisdiction: ISO
+    sector: privacy
+    status: in_force
+    module: privacy_standards
+    priority: later
+    ingest_enabled: false
+    notes: "Paid standard. Metadata and mappings only."
+
+  - short_name: SOC2
+    title: SOC 2 Trust Services Criteria
+    source_type: framework
+    jurisdiction: AICPA
+    sector: security
+    status: in_force
+    module: security_frameworks
+    priority: later
+    ingest_enabled: false
+
+  - short_name: NIST_CSF
+    title: NIST Cybersecurity Framework 2.0
+    source_type: framework
+    jurisdiction: US
+    sector: cybersecurity
+    status: in_force
+    module: cybersecurity_frameworks
+    priority: later
+    ingest_enabled: false
+    source_url: "https://www.nist.gov/cyberframework"
+
+  - short_name: OWASP_TOP10
+    title: OWASP Top 10
+    source_type: framework
+    jurisdiction: OWASP
+    sector: security
+    status: in_force
+    module: security_frameworks
+    priority: later
+    ingest_enabled: false
+    source_url: "https://owasp.org/www-project-top-ten/"
+
+  - short_name: MITRE_ATTACK
+    title: MITRE ATT&CK
+    source_type: framework
+    jurisdiction: MITRE
+    sector: security
+    status: in_force
+    module: security_frameworks
+    priority: later
+    ingest_enabled: false
+    source_url: "https://attack.mitre.org/"
+
+  # ============================================================
+  # MODULE I — WATCHLIST / PROPOSALS
+  # ============================================================
+
+  - short_name: PSD3_PROPOSAL
+    title: PSD3 / Payment Services Regulation Proposal
+    source_type: proposal
+    jurisdiction: EU
+    sector: payments
+    status: proposal
+    module: payments
+    priority: watchlist
+    ingest_enabled: false
+    notes: "Not yet adopted. Monitor for adoption."
+
+  - short_name: AI_ACT_OMNIBUS
+    title: AI Act Digital Omnibus Simplification Proposal
+    source_type: proposal
+    jurisdiction: EU
+    sector: ai
+    status: proposal
+    module: ai
+    priority: watchlist
+    ingest_enabled: false
+    notes: >
+      May affect high-risk deadlines. Dec 2027 / Aug 2028 changes proposed.
+      Verify operative position with counsel before relying on deadline dates.
+
+  - short_name: AI_ACT_HARMONISED_STANDARDS
+    title: Future Harmonised Standards under AI Act and CRA
+    source_type: standard
+    jurisdiction: EU
+    sector: ai
+    status: proposal
+    module: ai_standards
+    priority: watchlist
+    ingest_enabled: false
+    notes: "Being developed by CEN/CENELEC. Monitor for publication."
