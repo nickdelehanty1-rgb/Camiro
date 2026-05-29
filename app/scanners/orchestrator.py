@@ -5,6 +5,7 @@ from .ai_scanner import AIUsageScanner, AutomatedDecisionScanner
 from .vendor_scanner import VendorScanner, DataStorageScanner, RetentionDeletionScanner, LoggingScanner
 from .security_scanner import CookieTrackingScanner, SecurityControlScanner
 from .data_flow_scanner import DataFlowScanner
+from .evidence_intake_scanner import EvidenceIntakeScanner
 
 
 ALL_SCANNERS = [
@@ -130,4 +131,52 @@ def run_all_scanners(code: str, filename: str = "") -> dict:
             "has_special_category_data": has_special_category,
             "preliminary_risk_level": preliminary_risk,
         }
+    }
+
+
+def run_document_scan(text: str, filename: str,
+                      code_summary: dict = None) -> dict:
+    """
+    Run the document evidence layer on a plain-text or Markdown compliance document.
+    Optionally cross-check against a code scan summary from run_all_scanners().
+
+    Returns the same shape as run_all_scanners() so callers can treat both uniformly.
+    """
+    scanner = EvidenceIntakeScanner()
+    if code_summary:
+        scanner.set_code_summary(code_summary)
+
+    findings = scanner.scan(text, filename)
+
+    return {
+        "redacted_code": text,
+        "secrets_found": [],
+        "scanner_findings": [
+            {
+                "scanner_name": f.scanner_name,
+                "finding_type": f.finding_type,
+                "title": f.title,
+                "description": f.description,
+                "confidence": f.confidence,
+                "file_path": f.file_path,
+                "function_name": f.function_name,
+                "line_start": f.line_start,
+                "line_end": f.line_end,
+                "evidence_excerpt": f.evidence_excerpt,
+                "tags": f.tags,
+                "suggested_node_type": f.suggested_node_type,
+                "metadata": f.metadata,
+            }
+            for f in findings
+        ],
+        "summary": {
+            "total_scanner_findings": len(findings),
+            "document_type": scanner.last_doc_type,
+            "personal_data_categories": [],
+            "ai_systems_detected": [],
+            "vendors_detected": [],
+            "has_automated_decisions": False,
+            "has_special_category_data": False,
+            "preliminary_risk_level": "unknown",
+        },
     }
