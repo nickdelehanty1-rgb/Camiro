@@ -7,8 +7,14 @@ import os
 import re
 import uuid
 from dotenv import load_dotenv
+import logging
 
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.info(f"PORT env var: {os.environ.get('PORT', 'NOT SET')}")
+logger.info(f"All env vars with PORT: {[(k, v) for k, v in os.environ.items() if 'PORT' in k.upper()]}")
 
 from app.scanners.orchestrator import run_all_scanners
 from app.scanners.secret_scanner import redact_secrets
