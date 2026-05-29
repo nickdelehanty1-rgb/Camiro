@@ -136,6 +136,11 @@ textarea::placeholder{color:var(--light)}
 .sev-medium{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
 .sev-low{background:var(--green50);color:var(--green800);border:1px solid var(--green200)}
 .sev-info{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}
+.sev-contradiction{background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA}
+.sev-missing_evidence{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
+.sev-requires_review{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}
+.sev-observed{background:var(--green50);color:var(--green800);border:1px solid var(--green200)}
+.doc-type-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:5px 14px;border-radius:20px;background:var(--green50);color:var(--green800);border:1px solid var(--green200);margin-bottom:16px}
 .finding-desc{font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:8px}
 .finding-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .finding-hint{font-size:11px;font-family:monospace;color:var(--light);background:var(--sand);padding:3px 8px;border-radius:5px}
@@ -203,6 +208,7 @@ textarea::placeholder{color:var(--light)}
       <div class="input-tabs">
         <button class="tab-btn active" onclick="switchTab('paste')">Paste code</button>
         <button class="tab-btn" onclick="switchTab('upload')">Upload file</button>
+        <button class="tab-btn" onclick="switchTab('document')">Upload document</button>
       </div>
 
       <div id="pasteTab">
@@ -235,6 +241,24 @@ def score_candidate(user_id, cv_text, age, gender):
           <span class="file-selected-name" id="fileName"></span>
         </div>
       </div>
+
+      <div id="documentTab" class="hidden">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;padding:10px 12px;background:var(--green50);border-radius:8px;border:1px solid var(--green200)">
+          📋 Upload a privacy notice, DPIA, DPA, product spec or AI policy — Camiro will classify the document and flag missing evidence, gaps and contradictions against GDPR and EU AI Act obligations.
+        </div>
+        <div class="file-drop" id="docDrop" onclick="document.getElementById('docInput').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropDoc(event)">
+          <div class="file-drop-icon">📋</div>
+          <div class="file-drop-text">Drop your document here or click to browse</div>
+          <div class="file-drop-sub">Privacy notices, DPIAs, DPAs, product specs, AI policies — .md or .txt</div>
+          <div class="file-drop-sub" style="margin-top:4px;font-size:11px">For PDF or DOCX, copy-paste the text into the Paste code tab instead</div>
+        </div>
+        <input type="file" id="docInput" class="file-input" accept=".md,.txt,.rst" onchange="loadDoc(this)">
+        <div id="docSelected" class="file-selected hidden">
+          <span>📋</span>
+          <span class="file-selected-name" id="docFileName"></span>
+        </div>
+        <textarea id="docText" style="width:100%;min-height:160px;margin-top:12px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Inter',sans-serif;font-size:13px;line-height:1.6;color:var(--text);background:#fff;outline:none;resize:vertical" placeholder="Or paste document text here…"></textarea>
+      </div>
     </div>
 
     <div class="filename-row">
@@ -242,7 +266,7 @@ def score_candidate(user_id, cv_text, age, gender):
     </div>
 
     <div class="btn-row">
-      <button class="scan-btn" onclick="runScan()">Scan for EU compliance issues →</button>
+      <button class="scan-btn" id="scanBtn" onclick="handleScan()">Scan for EU compliance issues →</button>
       <button class="clear-btn" onclick="clearAll()">Clear</button>
     </div>
     <p class="hint">Nothing is stored. Code is processed and discarded immediately. No training on your data.</p>
@@ -263,8 +287,10 @@ def score_candidate(user_id, cv_text, age, gender):
 
   <div id="resultsView" class="results hidden">
 
+    <div id="docTypeBadge" class="doc-type-badge hidden"></div>
+
     <div class="result-header">
-      <div class="result-title">Compliance report</div>
+      <div id="resultTitle" class="result-title">Compliance report</div>
       <button class="pdf-btn" onclick="downloadPDF()">
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2"/>
@@ -318,7 +344,7 @@ def score_candidate(user_id, cv_text, age, gender):
       </button>
     </div>
 
-    <button class="scan-again" onclick="reset()">← Scan different code</button>
+    <button class="scan-again" id="scanAgainBtn" onclick="reset()">← Scan different code</button>
   </div>
 
 </main>
@@ -336,9 +362,15 @@ let activeTab = 'paste';
 
 function switchTab(tab) {
   activeTab = tab;
-  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='paste')||(i===1&&tab==='upload')));
+  const tabs = ['paste','upload','document'];
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', tabs[i]===tab));
   document.getElementById('pasteTab').classList.toggle('hidden', tab !== 'paste');
   document.getElementById('uploadTab').classList.toggle('hidden', tab !== 'upload');
+  document.getElementById('documentTab').classList.toggle('hidden', tab !== 'document');
+  const btn = document.getElementById('scanBtn');
+  btn.textContent = tab === 'document'
+    ? 'Scan document for compliance gaps →'
+    : 'Scan for EU compliance issues →';
 }
 
 function loadFile(input) {
@@ -353,6 +385,16 @@ function loadFile(input) {
   switchTab('paste');
 }
 
+function loadDoc(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('docFileName').textContent = file.name;
+  document.getElementById('docSelected').classList.remove('hidden');
+  const reader = new FileReader();
+  reader.onload = e => { document.getElementById('docText').value = e.target.result; };
+  reader.readAsText(file);
+}
+
 function dragOver(e) { e.preventDefault(); document.getElementById('fileDrop').classList.add('dragover'); }
 function dragLeave() { document.getElementById('fileDrop').classList.remove('dragover'); }
 function dropFile(e) {
@@ -361,11 +403,24 @@ function dropFile(e) {
   const file = e.dataTransfer.files[0];
   if (file) { document.getElementById('fileInput').files = e.dataTransfer.files; loadFile(document.getElementById('fileInput')); }
 }
+function dropDoc(e) {
+  e.preventDefault();
+  document.getElementById('docDrop').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) { document.getElementById('docInput').files = e.dataTransfer.files; loadDoc(document.getElementById('docInput')); }
+}
 
 function clearAll() {
   document.getElementById('codeInput').value = '';
   document.getElementById('filenameInput').value = '';
   document.getElementById('fileSelected').classList.add('hidden');
+  document.getElementById('docText').value = '';
+  document.getElementById('docSelected').classList.add('hidden');
+}
+
+function handleScan() {
+  if (activeTab === 'document') runDocumentScan();
+  else runScan();
 }
 
 async function runScan() {
@@ -373,6 +428,7 @@ async function runScan() {
   if (!code) { alert('Please paste some code first.'); return; }
   const filename = document.getElementById('filenameInput').value.trim() || 'uploaded_code';
 
+  document.getElementById('loadingView').querySelector('.loading-text').textContent = 'Analysing your code…';
   document.getElementById('inputView').classList.add('hidden');
   document.getElementById('loadingView').classList.remove('hidden');
 
@@ -395,8 +451,51 @@ async function runScan() {
   }
 }
 
+async function runDocumentScan() {
+  const text = document.getElementById('docText').value.trim();
+  if (!text) { alert('Please upload or paste a document first.'); return; }
+  const docFname = document.getElementById('docFileName').textContent.trim() || 'document.md';
+  const filename = docFname || 'document.md';
+
+  document.getElementById('loadingView').querySelector('.loading-text').textContent = 'Analysing your document…';
+  document.getElementById('loadingView').querySelector('.loading-sub').textContent = 'Checking against GDPR and EU AI Act obligations';
+  document.getElementById('inputView').classList.add('hidden');
+  document.getElementById('loadingView').classList.remove('hidden');
+
+  try {
+    const res = await fetch('/scan/document', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, filename })
+    });
+    const d = await res.json();
+    if (d.detail) throw new Error(d.detail);
+    currentData = d;
+    currentData._filename = filename;
+    currentData._date = new Date().toLocaleDateString('en-IE', { day:'numeric', month:'long', year:'numeric' });
+    currentData._isDocument = true;
+    render(d);
+  } catch(e) {
+    document.getElementById('loadingView').classList.add('hidden');
+    document.getElementById('inputView').classList.remove('hidden');
+    alert('Scan error: ' + e.message);
+  }
+}
+
 function render(d) {
   document.getElementById('loadingView').classList.add('hidden');
+
+  // Document type badge
+  const badge = document.getElementById('docTypeBadge');
+  if (d.document_type && d.document_type !== 'unknown') {
+    const label = d.document_type.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    badge.textContent = '📋 ' + label;
+    badge.classList.remove('hidden');
+    document.getElementById('resultTitle').textContent = 'Document compliance report';
+  } else {
+    badge.classList.add('hidden');
+    document.getElementById('resultTitle').textContent = 'Compliance report';
+  }
 
   const map = {
     prohibited:{card:'risk-prohibited',dot:'dot-prohibited',lv:'level-prohibited'},
@@ -425,13 +524,20 @@ function render(d) {
     return `<span class="chip chip-green">${name}</span>`;
   }).join('') || '<span style="font-size:12px;color:var(--light)">None identified</span>';
 
+  const docFindingLabels = {
+    'contradiction':'contradiction','missing_evidence':'missing evidence',
+    'requires_review':'review needed','observed':'observed'
+  };
   const findings = Array.isArray(d.findings) ? d.findings : [];
   document.getElementById('findings').innerHTML = findings.map(f => {
     const cite = [f.ai_act_article, f.gdpr_article].filter(Boolean).join(' · ');
+    const useFindingType = f.finding_type && docFindingLabels[f.finding_type];
+    const badgeCls = useFindingType ? `sev sev-${f.finding_type}` : `sev sev-${f.severity||'info'}`;
+    const badgeTxt = useFindingType ? docFindingLabels[f.finding_type] : (f.severity||'info');
     return `<div class="finding">
       <div class="finding-top">
         <div class="finding-title">${f.title||''}</div>
-        <span class="sev sev-${f.severity||'info'}">${f.severity||'info'}</span>
+        <span class="${badgeCls}">${badgeTxt}</span>
       </div>
       <div class="finding-desc">${f.description||''}</div>
       <div class="finding-meta">
@@ -458,7 +564,12 @@ function render(d) {
 function reset() {
   document.getElementById('resultsView').classList.add('hidden');
   document.getElementById('inputView').classList.remove('hidden');
+  const wasDoc = currentData && currentData._isDocument;
   currentData = null;
+  if (wasDoc) switchTab('document');
+  document.getElementById('scanAgainBtn').textContent = wasDoc
+    ? '← Analyse different document'
+    : '← Scan different code';
 }
 
 function downloadPDF() {

@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 logger.info(f"PORT env var: {os.environ.get('PORT', 'NOT SET')}")
 logger.info(f"All env vars with PORT: {[(k, v) for k, v in os.environ.items() if 'PORT' in k.upper()]}")
 
-from app.scanners.orchestrator import run_all_scanners
+from app.scanners.orchestrator import run_all_scanners, run_document_scan
 from app.scanners.secret_scanner import redact_secrets
 from app.graph.builder import GraphBuilder
 from app.corpus.loader import load_obligation_seeds, load_corpus_registry
@@ -40,6 +40,12 @@ class ScanInput(BaseModel):
     project_name: str = "Demo Project"
     filename: str = "code"
     code: str
+
+
+class DocumentScanInput(BaseModel):
+    text: str
+    filename: str = "document.md"
+    code_summary: dict = None
 
 
 # ── LLM system prompt ────────────────────────────────────────────────────────
@@ -175,6 +181,76 @@ Based on the scanner evidence above, return this exact JSON:
     return prompt
 
 
+# ── Document scan helpers ─────────────────────────────────────────────────────
+
+_GDPR_LABELS = {
+    "GDPR_ART5_PRINCIPLES": "GDPR Art. 5",
+    "GDPR_ART6_LAWFUL_BASIS": "GDPR Art. 6",
+    "GDPR_ART9_SPECIAL_CATEGORY": "GDPR Art. 9",
+    "GDPR_ART13_14_TRANSPARENCY": "GDPR Art. 13-14",
+    "GDPR_ART22_AUTOMATED_DECISIONS": "GDPR Art. 22",
+    "GDPR_ART25_PRIVACY_BY_DESIGN": "GDPR Art. 25",
+    "GDPR_ART28_PROCESSOR": "GDPR Art. 28",
+    "GDPR_ART30_ROPA": "GDPR Art. 30",
+    "GDPR_ART32_SECURITY": "GDPR Art. 32",
+    "GDPR_ART35_DPIA": "GDPR Art. 35",
+    "GDPR_ART44_49_TRANSFERS": "GDPR Art. 44-49",
+}
+
+_AI_ACT_LABELS = {
+    "AI_ACT_ART5_PROHIBITED": "AI Act Art. 5",
+    "AI_ACT_ART6_HIGH_RISK": "AI Act Art. 6",
+    "AI_ACT_ART9_RISK_MANAGEMENT": "AI Act Art. 9",
+    "AI_ACT_ART10_DATA_GOVERNANCE": "AI Act Art. 10",
+    "AI_ACT_ART13_TRANSPARENCY": "AI Act Art. 13",
+    "AI_ACT_ART14_HUMAN_OVERSIGHT": "AI Act Art. 14",
+    "AI_ACT_ART26_DEPLOYER": "AI Act Art. 26",
+}
+
+_DOC_FINDING_RECOMMENDATIONS = {
+    "contradiction": (
+        "Resolve the discrepancy between this document and the actual system behaviour "
+        "before relying on this document for compliance. Update the document or the system."
+    ),
+    "missing_evidence": (
+        "Add the missing content to this document. "
+        "Consult your legal or privacy team for appropriate wording."
+    ),
+    "requires_review": (
+        "Human legal review is required to confirm whether this obligation is satisfied."
+    ),
+    "observed": "Verify accuracy with your legal team. No immediate action required.",
+}
+
+
+def _doc_finding_to_output(f: dict) -> dict:
+    """Convert a raw scanner finding dict to frontend-compatible output format."""
+    tags = f.get("tags", [])
+    gdpr = next((_GDPR_LABELS[t] for t in tags if t in _GDPR_LABELS), None)
+    ai_act = next((_AI_ACT_LABELS[t] for t in tags if t in _AI_ACT_LABELS), None)
+    finding_type = f.get("finding_type", "requires_review")
+    severity_map = {
+        "contradiction": "high",
+        "missing_evidence": "medium",
+        "requires_review": "low",
+        "observed": "info",
+    }
+    return {
+        "title": f.get("title", ""),
+        "severity": severity_map.get(finding_type, "info"),
+        "finding_type": finding_type,
+        "description": f.get("description", ""),
+        "ai_act_article": ai_act,
+        "gdpr_article": gdpr,
+        "file_hint": f.get("file_path") or "",
+        "recommendation": _DOC_FINDING_RECOMMENDATIONS.get(finding_type, ""),
+        "observed_or_inferred": "observed" if finding_type == "observed" else "inferred",
+        "human_review_required": finding_type != "observed",
+        "uncertainties": [],
+        "confidence": f.get("confidence", 0.8),
+    }
+
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @app.get("/health")
@@ -211,6 +287,75 @@ async def scan_code(inp: ScanInput):
         project_id=proj_id,
     )
     return result
+
+
+@app.post("/scan/document")
+async def scan_document(inp: DocumentScanInput):
+    """Document evidence scanner — privacy notices, DPIAs, DPAs, product specs, AI policies."""
+    if not inp.text.strip():
+        raise HTTPException(status_code=400, detail="No document text provided")
+
+    result = run_document_scan(inp.text, inp.filename, inp.code_summary)
+
+    doc_type = result["summary"]["document_type"]
+    findings = [_doc_finding_to_output(f) for f in result["scanner_findings"]]
+
+    high = sum(1 for f in findings if f["severity"] == "high")
+    med  = sum(1 for f in findings if f["severity"] == "medium")
+
+    if high >= 2:
+        risk_level = "high"
+    elif findings:
+        risk_level = "limited"
+    else:
+        risk_level = "minimal"
+
+    doc_label = doc_type.replace("_", " ").title()
+    if findings:
+        risk_summary = (
+            f"Document classified as: {doc_label}. "
+            f"{len(findings)} compliance gap(s) identified — "
+            f"{high} contradiction(s) or critical gap(s), {med} missing evidence item(s). "
+            "Review and address findings before relying on this document for compliance."
+        )
+    else:
+        risk_summary = (
+            f"Document classified as: {doc_label}. "
+            "No compliance gaps detected by automated analysis. "
+            "Human review is still recommended before reliance."
+        )
+
+    immediate_actions = [
+        f["title"] for f in findings[:3]
+        if f["finding_type"] in ("contradiction", "missing_evidence")
+    ] or ["Review document findings with your legal and privacy team."]
+
+    return {
+        "document_type": doc_type,
+        "risk_level": risk_level,
+        "gdpr_risk": "unknown",
+        "ai_act_risk": "unknown",
+        "confidence": 0.8,
+        "risk_summary": risk_summary,
+        "stats": {
+            "total_issues": len(findings),
+            "high_severity": high,
+            "medium_severity": med,
+            "data_categories": 0,
+        },
+        "findings": findings,
+        "data_identified": [],
+        "automated_decisions": False,
+        "ai_systems_detected": [],
+        "immediate_actions": immediate_actions,
+        "missing_information": [],
+        "suggested_next_questions": [],
+        "_disclaimer": (
+            "Camiro provides technical compliance decision support. "
+            "It is not legal advice and does not replace review by qualified "
+            "legal, privacy, security or regulatory professionals."
+        ),
+    }
 
 
 @app.get("/corpus/sources")
