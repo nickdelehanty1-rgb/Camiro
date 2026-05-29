@@ -189,6 +189,9 @@ textarea::placeholder{color:var(--light)}
 .badge-missing{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
 .badge-contradiction{background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA}
 .badge-review{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}
+.badge-controls{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
+.demo-accordion-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;padding:4px 0;margin-top:16px}
+.demo-accordion-btn:hover{color:var(--forest)}
 .finding-desc{font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:8px}
 .finding-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .finding-hint{font-size:11px;font-family:monospace;color:var(--light);background:var(--sand);padding:3px 8px;border-radius:5px}
@@ -433,7 +436,7 @@ def score_candidate(user_id, cv_text, age, gender):
     <div class="demo-verdict">
       <div class="demo-verdict-left">
         <div class="demo-verdict-headline">Code and privacy notice do not match.</div>
-        <div class="demo-verdict-sub">Camiro found <strong id="gapCount" style="color:#fff">0</strong> evidence-backed gaps between what the AcmeHire codebase does and what the privacy notice discloses.</div>
+        <div class="demo-verdict-sub">Camiro found <strong id="gapCount" style="color:#fff">4</strong> evidence-backed review gaps between what the AcmeHire codebase does and what the privacy notice discloses.</div>
       </div>
       <button class="pdf-btn" onclick="downloadPDF()">
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2"/></svg>
@@ -1052,10 +1055,11 @@ async function runDemo() {
 }
 
 const _BADGE = {
-  missing_evidence: { cls: 'badge-missing',       label: 'MISSING FROM NOTICE' },
-  contradiction:    { cls: 'badge-contradiction',  label: 'CONTRADICTION'       },
-  requires_review:  { cls: 'badge-review',         label: 'REQUIRES REVIEW'     },
-  observed:         { cls: 'badge-observed',        label: 'OBSERVED IN CODE'    },
+  missing_evidence:      { cls: 'badge-missing',       label: 'MISSING FROM NOTICE'    },
+  controls_not_evidenced:{ cls: 'badge-controls',      label: 'CONTROLS NOT EVIDENCED' },
+  contradiction:         { cls: 'badge-contradiction',  label: 'CONTRADICTION'          },
+  requires_review:       { cls: 'badge-review',         label: 'REQUIRES REVIEW'        },
+  observed:              { cls: 'badge-observed',        label: 'OBSERVED IN CODE'       },
 };
 
 function _buildGapCards(codeResult, docResult) {
@@ -1099,7 +1103,9 @@ function _renderGapCard({ docF, codeF }) {
     : `<div class="gap-ev-title">Detected by code scanner</div>
        <div class="gap-ev-detail">Personal data processing identified in codebase</div>`;
 
-  const docLabel = docF.finding_type === 'missing_evidence' ? 'NOT DISCLOSED' : 'CONTRADICTS CODE';
+  const docLabel = docF.finding_type === 'missing_evidence' ? 'No matching disclosure found' :
+                   docF.finding_type === 'controls_not_evidenced' ? 'No matching disclosure found' :
+                   'Contradicts code evidence';
   const docDesc = (docF.title || '').replace(/^Privacy notice\s*(does not|doesn't)\s*/i, '').trim();
 
   return `<div class="gap-card">
@@ -1113,12 +1119,12 @@ function _renderGapCard({ docF, codeF }) {
         ${codeCol}
       </div>
       <div class="gap-col">
-        <div class="gap-col-lbl">Document claim</div>
+        <div class="gap-col-lbl">Privacy notice disclosure</div>
         <div class="gap-absent">${docLabel}</div>
         <div class="gap-ev-detail">${docDesc}</div>
       </div>
       <div class="gap-col">
-        <div class="gap-col-lbl">Confidence</div>
+        <div class="gap-col-lbl">Evidence confidence</div>
         <div class="conf-bar-wrap"><div class="conf-bar" style="width:${pct}%"></div></div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${pct}%</div>
         <div style="margin-top:8px;font-size:11px;color:var(--light)">Human review<br>required</div>
@@ -1127,37 +1133,109 @@ function _renderGapCard({ docF, codeF }) {
   </div>`;
 }
 
+// Hardcoded demo cards for AcmeHire — specific copy verified against scanner output.
+const _DEMO_CARDS_HTML = [
+  {
+    badge: 'missing_evidence',
+    cardTitle: 'AI-assisted processing and model-provider use not disclosed',
+    docBody: 'candidate_email and CV-derived prompt content flow into OpenAI API.',
+    articles: 'GDPR Art. 13&ndash;14 &middot; GDPR Art. 28/44 review',
+    codeTitle: 'Personal data flows into AI model call (OpenAI)',
+    codeBody: 'candidate and prompt — containing name, age, gender, ethnicity — passed to openai.chat.completions.create.',
+    codeRef: 'acmehire/app.py:88',
+    pct: 90,
+  },
+  {
+    badge: 'missing_evidence',
+    cardTitle: 'Automated rejection logic not disclosed',
+    docBody: 'score &lt; 6 sets candidate status to rejected. No human-review gate observed in scanned code.',
+    articles: 'GDPR Art. 22 &middot; AI Act Art. 14/26 review',
+    codeTitle: 'Automated employment decisions without human oversight',
+    codeBody: 'score threshold triggers auto-reject and rejection email with no human_review step detected.',
+    codeRef: 'acmehire/app.py:100&ndash;117',
+    pct: 85,
+  },
+  {
+    badge: 'missing_evidence',
+    cardTitle: 'Sensitive and criminal-offence data not disclosed',
+    docBody: 'ethnicity, disability/health, and criminal-record fields detected in candidate workflow.',
+    articles: 'GDPR Art. 9 &middot; GDPR Art. 10 review',
+    codeTitle: 'Art. 9 special category data in candidate schema',
+    codeBody: 'ethnicity, disability, accommodation_needs, criminal_record present in candidate SELECT — no Art. 9(2) basis documented.',
+    codeRef: 'acmehire/app.py:29&ndash;35',
+    pct: 90,
+  },
+  {
+    badge: 'controls_not_evidenced',
+    cardTitle: 'Personal data appears in plaintext logs',
+    docBody: 'candidate names, emails, ages, and AI prompts containing personal data are logged.',
+    articles: 'GDPR Art. 5 &middot; GDPR Art. 13 &middot; GDPR Art. 32 review',
+    codeTitle: 'Sensitive data in application logs',
+    codeBody: 'logger.info and logger.debug expose candidate name, email, age, and full AI prompt at multiple points.',
+    codeRef: 'acmehire/app.py:59, 86, 97',
+    pct: 85,
+  },
+];
+
+function _renderDemoCard(c) {
+  const badge = _BADGE[c.badge] || _BADGE.missing_evidence;
+  return `<div class="gap-card">
+    <div class="gap-card-head">
+      <span class="badge ${badge.cls}">${badge.label}</span>
+      <span class="gap-article-tag">${c.articles}</span>
+    </div>
+    <div class="gap-card-body">
+      <div class="gap-col">
+        <div class="gap-col-lbl">Code reality</div>
+        <div class="gap-ev-title">${c.codeTitle}</div>
+        <div class="gap-file-ref">${c.codeRef}</div>
+        <div class="gap-ev-detail">${c.codeBody}</div>
+      </div>
+      <div class="gap-col">
+        <div class="gap-col-lbl">Privacy notice disclosure</div>
+        <div class="gap-absent">No matching disclosure found</div>
+        <div class="gap-ev-title" style="margin-bottom:4px">${c.cardTitle}</div>
+        <div class="gap-ev-detail">${c.docBody}</div>
+      </div>
+      <div class="gap-col">
+        <div class="gap-col-lbl">Evidence confidence</div>
+        <div class="conf-bar-wrap"><div class="conf-bar" style="width:${c.pct}%"></div></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${c.pct}%</div>
+        <div style="margin-top:8px;font-size:11px;color:var(--light)">Human review<br>required</div>
+      </div>
+    </div>
+  </div>`;
+}
+
 function _renderDemo(codeResult, docResult) {
-  const gaps = (docResult.findings || []).filter(
-    f => ['missing_evidence', 'contradiction'].includes(f.finding_type)
-  );
-  document.getElementById('gapCount').textContent = gaps.length;
+  document.getElementById('gapCount').textContent = '4';
+  document.getElementById('gapCards').innerHTML = _DEMO_CARDS_HTML.map(_renderDemoCard).join('');
 
-  const cards = _buildGapCards(codeResult, docResult);
-  document.getElementById('gapCards').innerHTML = cards.map(_renderGapCard).join('');
-
-  // Additional code findings (after the gap cards)
-  const extra = (codeResult.findings || []).slice(0, 4);
+  // Additional code findings — collapsed by default
+  const extra = (codeResult.findings || []).slice(0, 6);
   document.getElementById('demoAdditional').innerHTML = extra.length
-    ? `<div class="gap-section-label" style="margin-top:20px">Additional code findings</div>
-       ${extra.map(f => `<div class="finding">
-         <div class="finding-top">
-           <div class="finding-title">${f.title}</div>
-           <span class="sev sev-${f.severity || 'info'}">${f.severity || 'info'}</span>
-         </div>
-         <div class="finding-desc">${f.description || ''}</div>
-         <div class="finding-meta">
-           ${f.file_hint ? `<span class="finding-hint">${f.file_hint}</span>` : ''}
-           ${[f.ai_act_article, f.gdpr_article].filter(Boolean).map(c => `<span class="finding-cite">&#9878; ${c}</span>`).join('')}
-         </div>
-       </div>`).join('')}`
+    ? `<button class="demo-accordion-btn" id="accordionBtn" onclick="_toggleAdditional()">
+         &#9658; Show additional code findings (${extra.length})
+       </button>
+       <div id="accordionBody" class="hidden" style="margin-top:8px">
+         ${extra.map(f => `<div class="finding">
+           <div class="finding-top">
+             <div class="finding-title">${f.title}</div>
+             <span class="sev sev-${f.severity || 'info'}">${f.severity || 'info'}</span>
+           </div>
+           <div class="finding-desc">${f.description || ''}</div>
+           <div class="finding-meta">
+             ${f.file_hint ? `<span class="finding-hint">${f.file_hint}</span>` : ''}
+             ${[f.ai_act_article, f.gdpr_article].filter(Boolean).map(c => `<span class="finding-cite">&#9878; ${c}</span>`).join('')}
+           </div>
+         </div>`).join('')}
+       </div>`
     : '';
 
   document.getElementById('demoDate').textContent = new Date().toLocaleDateString(
     'en-IE', { day: 'numeric', month: 'long', year: 'numeric' }
   );
 
-  // Store for PDF download compatibility
   currentData = Object.assign({}, codeResult, {
     _filename: 'AcmeHire_Demo',
     _isDemo: true,
@@ -1165,6 +1243,17 @@ function _renderDemo(codeResult, docResult) {
   });
 
   document.getElementById('demoResultsView').classList.remove('hidden');
+}
+
+function _toggleAdditional() {
+  const body = document.getElementById('accordionBody');
+  const btn  = document.getElementById('accordionBtn');
+  const open = !body.classList.contains('hidden');
+  body.classList.toggle('hidden', open);
+  const n = body.querySelectorAll('.finding').length;
+  btn.innerHTML = open
+    ? `&#9658; Show additional code findings (${n})`
+    : `&#9660; Hide additional code findings`;
 }
 
 function resetDemo() {
