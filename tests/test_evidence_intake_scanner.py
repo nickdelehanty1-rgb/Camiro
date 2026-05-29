@@ -206,11 +206,36 @@ if __name__ == "__main__":
         print(f"       FAILED: AI gap was still flagged despite disclosure present")
     print()
 
+    # Test d — standalone privacy notice, NO code context supplied
+    # Should still produce findings: requires_review for AI, automated decisions,
+    # special category; plus rights completeness gap.
+    STANDALONE_NOTICE = """
+# Privacy Notice
+
+We collect your name, email address and CV when you apply for a position.
+We use your data to assess your suitability for the role.
+Legal basis: legitimate interests. Retention: 12 months.
+Your rights: access only.
+"""
+    scanner_d = EvidenceIntakeScanner()  # no set_code_summary()
+    findings_d = scanner_d.scan(STANDALONE_NOTICE, "privacy_notice.md")
+    types_d = {f.finding_type for f in findings_d}
+    # Must fire requires_review (standalone AI/automated/special-cat checks)
+    # AND missing_evidence (rights completeness)
+    d_ok = 'requires_review' in types_d and 'missing_evidence' in types_d and len(findings_d) > 0
+    status_d = PASS if d_ok else FAIL
+    print(f"[{status_d}] d) standalone privacy notice, no code context (EXPECT: fire, both requires_review and missing_evidence)")
+    for f in findings_d:
+        print(f"       [{f.finding_type}] [{f.confidence:.2f}] {f.title}")
+    if not d_ok:
+        print(f"       FAILED: types present={types_d}, expected both requires_review and missing_evidence")
+    print()
+
     print("=" * 60)
     run_sample_docs()
     print("=" * 60)
 
-    passed = sum([result_a, result_b, c_ok])
-    print(f"\nUnit tests: {passed}/3 passed")
-    if passed < 3:
+    passed = sum([result_a, result_b, c_ok, d_ok])
+    print(f"\nUnit tests: {passed}/4 passed")
+    if passed < 4:
         sys.exit(1)

@@ -302,6 +302,14 @@ class EvidenceIntakeScanner(BaseScanner):
 
     # -- Privacy notice checks --
 
+    # Rights that must appear in every privacy notice under GDPR Art. 13(2)(b-d).
+    _KEY_RIGHTS: dict[str, list[str]] = {
+        'erasure / right to be forgotten': [r'\berasure\b', r'\bforgotten\b', r'\bdeletion\b'],
+        'data portability':                [r'\bportab'],
+        'rectification':                   [r'\brectif', r'\bcorrect'],
+        'objection to processing':         [r'\bobject'],
+    }
+
     def _check_privacy_notice(self, text: str, filename: str,
                                ex: dict) -> list[ScannerFinding]:
         findings: list[ScannerFinding] = []
@@ -314,30 +322,49 @@ class EvidenceIntakeScanner(BaseScanner):
         special_cat_in_code = cs.get('has_special_category_data', False)
         auto_decisions_in_code = cs.get('has_automated_decisions', False)
 
-        # Cross-check: AI in code but not disclosed in notice
-        if ai_in_code and not ex['has_ai_disclosure']:
-            vendor_names = ', '.join(
-                v.get('name', '') for v in cs.get('ai_systems_detected', [])
-            ) or 'AI systems'
-            findings.append(self._make(
-                finding_type='missing_evidence',
-                title='Privacy notice does not disclose AI or automated processing',
-                description=(
-                    f"Code analysis detected {vendor_names} but this privacy notice "
-                    f"contains no disclosure of AI use, automated processing, or algorithmic "
-                    f"decision-making. GDPR Art. 13-14 requires disclosure of automated "
-                    f"decision logic and its significance to data subjects."
-                ),
-                filename=filename,
-                line_start=None,
-                excerpt=None,
-                tags=['missing_evidence', 'GDPR_ART13_14_TRANSPARENCY', 'AI_ACT_ART13_TRANSPARENCY'],
-                confidence=0.85,
-                metadata={'doc_type': 'privacy_notice', 'gap': 'ai_disclosure',
-                          'ai_systems_in_code': vendors_in_code},
-            ))
+        # ── AI / automated processing disclosure ──────────────────────────────
+        # Always-on: fire regardless of code context.
+        # Confidence and finding_type upgrade when code context confirms AI is used.
+        if not ex['has_ai_disclosure']:
+            if ai_in_code:
+                vendor_names = ', '.join(
+                    v.get('name', '') for v in cs.get('ai_systems_detected', [])
+                ) or 'AI systems'
+                findings.append(self._make(
+                    finding_type='missing_evidence',
+                    title='Privacy notice does not disclose AI or automated processing',
+                    description=(
+                        f"Code analysis detected {vendor_names} but this privacy notice "
+                        "contains no disclosure of AI use, automated processing, or algorithmic "
+                        "decision-making. GDPR Art. 13-14 requires disclosure of the logic, "
+                        "significance, and envisaged consequences of automated processing."
+                    ),
+                    filename=filename, line_start=None, excerpt=None,
+                    tags=['missing_evidence', 'GDPR_ART13_14_TRANSPARENCY',
+                          'AI_ACT_ART13_TRANSPARENCY'],
+                    confidence=0.85,
+                    metadata={'doc_type': 'privacy_notice', 'gap': 'ai_disclosure',
+                              'cross_checked': True, 'ai_systems_in_code': vendors_in_code},
+                ))
+            else:
+                findings.append(self._make(
+                    finding_type='requires_review',
+                    title='Privacy notice does not disclose AI or automated processing',
+                    description=(
+                        "No reference to artificial intelligence, machine learning, or automated "
+                        "processing was found. If your system uses AI or automated decision-making, "
+                        "GDPR Art. 13(2)(f) requires disclosure of the logic involved and its "
+                        "significance. Verify whether this disclosure is needed."
+                    ),
+                    filename=filename, line_start=None, excerpt=None,
+                    tags=['requires_review', 'GDPR_ART13_14_TRANSPARENCY',
+                          'AI_ACT_ART13_TRANSPARENCY'],
+                    confidence=0.70,
+                    metadata={'doc_type': 'privacy_notice', 'gap': 'ai_disclosure',
+                              'cross_checked': False},
+                ))
 
-        # Cross-check: specific vendor mentioned in code but not in notice
+        # ── Vendor naming (cross-check only, requires code context) ───────────
         if vendors_in_code and ex['has_ai_disclosure']:
             missing_vendors = [
                 v for v in vendors_in_code
@@ -349,108 +376,165 @@ class EvidenceIntakeScanner(BaseScanner):
                     title=f"Privacy notice does not name AI processor(s): {', '.join(missing_vendors)}",
                     description=(
                         f"Code uses {', '.join(missing_vendors)} but the privacy notice "
-                        f"does not identify this processor by name. GDPR Art. 13(1)(e) requires "
-                        f"disclosure of recipients or categories of recipients. A generic "
-                        f"reference to 'third-party processors' may be insufficient."
+                        "does not identify this processor by name. GDPR Art. 13(1)(e) requires "
+                        "disclosure of recipients or categories of recipients."
                     ),
-                    filename=filename,
-                    line_start=None,
-                    excerpt=None,
+                    filename=filename, line_start=None, excerpt=None,
                     tags=['missing_evidence', 'GDPR_ART13_14_TRANSPARENCY', 'GDPR_ART28_PROCESSOR'],
                     confidence=0.80,
                     metadata={'doc_type': 'privacy_notice', 'gap': 'vendor_not_named',
                               'missing_vendors': missing_vendors},
                 ))
 
-        # Cross-check: special category data in code but no Art. 9 disclosure
-        if special_cat_in_code and not ex['has_special_category_mention']:
-            findings.append(self._make(
-                finding_type='missing_evidence',
-                title='Special category data processed in code but not disclosed in privacy notice',
-                description=(
-                    "Code analysis detected special category data (health, ethnicity, disability "
-                    "or similar) but this privacy notice does not reference Art. 9 special "
-                    "category data or an explicit legal basis for such processing. "
-                    "GDPR Art. 9 processing requires disclosure and a specific Art. 9(2) basis."
-                ),
-                filename=filename,
-                line_start=None,
-                excerpt=None,
-                tags=['missing_evidence', 'GDPR_ART9_SPECIAL_CATEGORY', 'GDPR_ART13_14_TRANSPARENCY'],
-                confidence=0.85,
-                metadata={'doc_type': 'privacy_notice', 'gap': 'special_category_disclosure'},
-            ))
+        # ── Automated decision-making disclosure ──────────────────────────────
+        if not ex['has_automated_decision_disclosure']:
+            if auto_decisions_in_code:
+                findings.append(self._make(
+                    finding_type='missing_evidence',
+                    title='Automated decision-making detected in code but not disclosed',
+                    description=(
+                        "Code analysis found automated decision-making patterns but this privacy "
+                        "notice does not reference GDPR Art. 22 rights or the logic behind "
+                        "automated decisions. Art. 13(2)(f) requires meaningful information about "
+                        "the logic, significance, and envisaged consequences."
+                    ),
+                    filename=filename, line_start=None, excerpt=None,
+                    tags=['missing_evidence', 'GDPR_ART22_AUTOMATED_DECISIONS',
+                          'GDPR_ART13_14_TRANSPARENCY'],
+                    confidence=0.85,
+                    metadata={'doc_type': 'privacy_notice', 'gap': 'automated_decision_disclosure',
+                              'cross_checked': True},
+                ))
+            else:
+                findings.append(self._make(
+                    finding_type='requires_review',
+                    title='Privacy notice does not address automated decision-making',
+                    description=(
+                        "No disclosure of automated decision-making or profiling was found. "
+                        "If the system makes automated decisions with legal or similarly significant "
+                        "effects, GDPR Art. 22 rights must be disclosed — including the right to "
+                        "request human review and to contest decisions."
+                    ),
+                    filename=filename, line_start=None, excerpt=None,
+                    tags=['requires_review', 'GDPR_ART22_AUTOMATED_DECISIONS',
+                          'GDPR_ART13_14_TRANSPARENCY'],
+                    confidence=0.68,
+                    metadata={'doc_type': 'privacy_notice', 'gap': 'automated_decision_disclosure',
+                              'cross_checked': False},
+                ))
 
-        # Cross-check: automated decisions in code but no Art. 22 disclosure
-        if auto_decisions_in_code and not ex['has_automated_decision_disclosure']:
-            findings.append(self._make(
-                finding_type='missing_evidence',
-                title='Automated decisions detected in code but not disclosed in privacy notice',
-                description=(
-                    "Code analysis found automated decision-making patterns but this privacy "
-                    "notice does not reference GDPR Art. 22 rights or the logic behind automated "
-                    "decisions. Art. 13(2)(f) requires meaningful information about the logic, "
-                    "significance and envisaged consequences of automated processing."
-                ),
-                filename=filename,
-                line_start=None,
-                excerpt=None,
-                tags=['missing_evidence', 'GDPR_ART22_AUTOMATED_DECISIONS',
-                      'GDPR_ART13_14_TRANSPARENCY'],
-                confidence=0.85,
-                metadata={'doc_type': 'privacy_notice', 'gap': 'automated_decision_disclosure'},
-            ))
+        # ── Special category data (Art. 9) ────────────────────────────────────
+        if not ex['has_special_category_mention']:
+            if special_cat_in_code:
+                findings.append(self._make(
+                    finding_type='missing_evidence',
+                    title='Special category data processed in code but not disclosed',
+                    description=(
+                        "Code analysis detected special category data (health, ethnicity, "
+                        "disability or similar) but this privacy notice does not reference "
+                        "Art. 9 special category data or an explicit Art. 9(2) legal basis."
+                    ),
+                    filename=filename, line_start=None, excerpt=None,
+                    tags=['missing_evidence', 'GDPR_ART9_SPECIAL_CATEGORY',
+                          'GDPR_ART13_14_TRANSPARENCY'],
+                    confidence=0.85,
+                    metadata={'doc_type': 'privacy_notice', 'gap': 'special_category_disclosure',
+                              'cross_checked': True},
+                ))
+            else:
+                findings.append(self._make(
+                    finding_type='requires_review',
+                    title='Privacy notice does not reference special category data',
+                    description=(
+                        "No reference to Art. 9 special category data (health, ethnicity, "
+                        "disability, biometric, genetic, political, religious, or criminal data) "
+                        "was found. If any such data is processed, a specific Art. 9(2) basis "
+                        "must be identified and disclosed."
+                    ),
+                    filename=filename, line_start=None, excerpt=None,
+                    tags=['requires_review', 'GDPR_ART9_SPECIAL_CATEGORY'],
+                    confidence=0.65,
+                    metadata={'doc_type': 'privacy_notice', 'gap': 'special_category_disclosure',
+                              'cross_checked': False},
+                ))
 
-        # Standalone checks (no code context needed)
+        # ── Lawful basis ──────────────────────────────────────────────────────
         if not ex['has_legal_basis']:
             findings.append(self._make(
                 finding_type='missing_evidence',
                 title='Privacy notice does not state a lawful basis for processing',
                 description=(
-                    "No lawful basis for processing (Art. 6) was identified in this privacy notice. "
-                    "GDPR Art. 13(1)(c) requires disclosure of the legal basis and, where legitimate "
-                    "interests apply, the specific interests pursued."
+                    "No lawful basis for processing was identified. "
+                    "GDPR Art. 13(1)(c) requires disclosure of the legal basis and, where "
+                    "legitimate interests apply, the specific interests pursued."
                 ),
-                filename=filename,
-                line_start=None,
-                excerpt=None,
+                filename=filename, line_start=None, excerpt=None,
                 tags=['missing_evidence', 'GDPR_ART6_LAWFUL_BASIS', 'GDPR_ART13_14_TRANSPARENCY'],
                 confidence=0.85,
                 metadata={'doc_type': 'privacy_notice', 'gap': 'lawful_basis'},
             ))
 
+        # ── Retention period ──────────────────────────────────────────────────
         if not ex['has_retention_period']:
             findings.append(self._make(
                 finding_type='missing_evidence',
                 title='Privacy notice does not specify a retention period',
                 description=(
-                    "No data retention period or criteria for determining it was identified. "
-                    "GDPR Art. 13(2)(a) requires disclosure of the period data will be stored "
-                    "or, if not possible, the criteria used to determine that period."
+                    "No data retention period or criteria for determining it was found. "
+                    "GDPR Art. 13(2)(a) requires disclosure of the storage period or the "
+                    "criteria used to determine it."
                 ),
-                filename=filename,
-                line_start=None,
-                excerpt=None,
+                filename=filename, line_start=None, excerpt=None,
                 tags=['missing_evidence', 'GDPR_ART5_PRINCIPLES', 'GDPR_ART13_14_TRANSPARENCY'],
                 confidence=0.80,
                 metadata={'doc_type': 'privacy_notice', 'gap': 'retention_period'},
             ))
 
-        if not ex['has_data_subject_rights']:
+        # ── Data subject rights — existence and completeness ──────────────────
+        has_rights_section = _has(text, [
+            r'right\s+to\s+(access|erasure|object|portab|restrict|correct|rectif)',
+            r'data\s+subject\s+rights',
+            r'your\s+rights',
+            r'you\s+have\s+the\s+(following\s+)?right',
+            r'rights\s*:',
+        ])
+
+        if not has_rights_section:
             findings.append(self._make(
                 finding_type='missing_evidence',
                 title='Privacy notice does not reference data subject rights',
                 description=(
-                    "No reference to data subject rights (access, erasure, portability, objection) "
-                    "was found. GDPR Art. 13(2)(b-d) requires disclosure of these rights."
+                    "No data subject rights section was found. GDPR Art. 13(2)(b-d) requires "
+                    "disclosure of the rights of access, erasure, portability, rectification, "
+                    "objection, and restriction of processing."
                 ),
-                filename=filename,
-                line_start=None,
-                excerpt=None,
+                filename=filename, line_start=None, excerpt=None,
                 tags=['missing_evidence', 'GDPR_ART13_14_TRANSPARENCY'],
-                confidence=0.80,
+                confidence=0.85,
                 metadata={'doc_type': 'privacy_notice', 'gap': 'data_subject_rights'},
             ))
+        else:
+            # Rights section exists — check completeness
+            missing_rights = [
+                name for name, patterns in self._KEY_RIGHTS.items()
+                if not _has(text, patterns)
+            ]
+            if missing_rights:
+                findings.append(self._make(
+                    finding_type='missing_evidence',
+                    title=f"Privacy notice rights section incomplete — missing: {', '.join(missing_rights)}",
+                    description=(
+                        f"A data subject rights section was found but appears to omit: "
+                        f"{', '.join(missing_rights)}. GDPR Art. 13(2)(b-d) requires disclosure "
+                        "of all applicable rights including erasure, portability, rectification, "
+                        "and objection to processing."
+                    ),
+                    filename=filename, line_start=None, excerpt=None,
+                    tags=['missing_evidence', 'GDPR_ART13_14_TRANSPARENCY'],
+                    confidence=0.75,
+                    metadata={'doc_type': 'privacy_notice', 'gap': 'rights_incomplete',
+                              'missing_rights': missing_rights},
+                ))
 
         return findings
 

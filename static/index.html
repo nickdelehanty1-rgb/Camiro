@@ -243,8 +243,11 @@ def score_candidate(user_id, cv_text, age, gender):
       </div>
 
       <div id="documentTab" class="hidden">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;padding:10px 12px;background:var(--green50);border-radius:8px;border:1px solid var(--green200)">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;padding:10px 12px;background:var(--green50);border-radius:8px;border:1px solid var(--green200)">
           📋 Upload a privacy notice, DPIA, DPA, product spec or AI policy — Camiro will classify the document and flag missing evidence, gaps and contradictions against GDPR and EU AI Act obligations.
+        </div>
+        <div id="contextStatus" style="font-size:12px;color:var(--muted);margin-bottom:14px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--sand)">
+          Scan your code first to enable cross-checking — or scan this document standalone.
         </div>
         <div class="file-drop" id="docDrop" onclick="document.getElementById('docInput').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropDoc(event)">
           <div class="file-drop-icon">📋</div>
@@ -359,6 +362,38 @@ def score_candidate(user_id, cv_text, age, gender):
 <script>
 let currentData = null;
 let activeTab = 'paste';
+let lastCodeSummary = null;  // populated after a code scan; used for document cross-checking
+
+const _SPECIAL_CATS = ['health_data','biometric_data','genetic_data','health','ethnicity',
+  'disability','criminal_data','health data','biometric data','special category'];
+
+function _buildCodeSummary(d) {
+  const hasSpecial = (d.data_identified || []).some(
+    c => _SPECIAL_CATS.some(s => c.toLowerCase().includes(s))
+  );
+  return {
+    ai_systems_detected: d.ai_systems_detected || [],
+    has_automated_decisions: d.automated_decisions || false,
+    has_special_category_data: hasSpecial,
+    vendors_detected: (d.ai_systems_detected || []).map(s => (typeof s === 'object' ? s.name : s) || '').filter(Boolean),
+    personal_data_categories: d.data_identified || [],
+  };
+}
+
+function updateContextStatus() {
+  const el = document.getElementById('contextStatus');
+  if (!el) return;
+  if (lastCodeSummary && lastCodeSummary.ai_systems_detected !== undefined) {
+    const ai = lastCodeSummary.ai_systems_detected.map(s => s.name || s).filter(Boolean);
+    el.innerHTML = `<span style="color:var(--green800)">✓ Code context available</span> — AI: ${ai.join(', ') || 'none detected'} · Auto-decisions: ${lastCodeSummary.has_automated_decisions}`;
+    el.style.background = 'var(--green50)';
+    el.style.borderColor = 'var(--green200)';
+  } else {
+    el.innerHTML = 'Scan your code first to enable cross-checking — or scan this document standalone.';
+    el.style.background = 'var(--sand)';
+    el.style.borderColor = 'var(--border)';
+  }
+}
 
 function switchTab(tab) {
   activeTab = tab;
@@ -371,6 +406,7 @@ function switchTab(tab) {
   btn.textContent = tab === 'document'
     ? 'Scan document for compliance gaps →'
     : 'Scan for EU compliance issues →';
+  if (tab === 'document') updateContextStatus();
 }
 
 function loadFile(input) {
@@ -443,6 +479,7 @@ async function runScan() {
     currentData = d;
     currentData._filename = filename;
     currentData._date = new Date().toLocaleDateString('en-IE', { day:'numeric', month:'long', year:'numeric' });
+    lastCodeSummary = _buildCodeSummary(d);
     render(d);
   } catch(e) {
     document.getElementById('loadingView').classList.add('hidden');
@@ -463,10 +500,12 @@ async function runDocumentScan() {
   document.getElementById('loadingView').classList.remove('hidden');
 
   try {
+    const body = { text, filename };
+    if (lastCodeSummary) body.code_summary = lastCodeSummary;
     const res = await fetch('/scan/document', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, filename })
+      body: JSON.stringify(body)
     });
     const d = await res.json();
     if (d.detail) throw new Error(d.detail);
