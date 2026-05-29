@@ -14,16 +14,16 @@ SECRET_PATTERNS = [
     (r'ghp_[a-zA-Z0-9]{36}', "GitHub Personal Access Token"),
     (r'xoxb-[0-9]{11}-[0-9]{11}-[a-zA-Z0-9]{24}', "Slack Bot Token"),
     (r'-----BEGIN (RSA |EC )?PRIVATE KEY-----', "Private key"),
-    (r'password\s*=\s*["\'][^"\']{6,}["\']', "Hardcoded password"),
-    (r'passwd\s*=\s*["\'][^"\']{6,}["\']', "Hardcoded password"),
-    (r'secret\s*=\s*["\'][^"\']{6,}["\']', "Hardcoded secret"),
+    (r'(password\s*=\s*)["\'][^"\']{6,}["\']', "Hardcoded password"),
+    (r'(passwd\s*=\s*)["\'][^"\']{6,}["\']', "Hardcoded password"),
+    (r'(secret\s*=\s*)["\'][^"\']{6,}["\']', "Hardcoded secret"),
     (r'postgresql://[^:]+:[^@]+@', "Database connection string with credentials"),
     (r'mysql://[^:]+:[^@]+@', "Database connection string with credentials"),
     (r'mongodb(\+srv)?://[^:]+:[^@]+@', "MongoDB connection string with credentials"),
     (r'redis://:[^@]+@', "Redis connection string with credentials"),
     (r'Authorization:\s*Bearer\s+[a-zA-Z0-9\-._~+/]+=*', "Bearer token"),
-    (r'api_key\s*=\s*["\'][a-zA-Z0-9\-_]{16,}["\']', "Hardcoded API key"),
-    (r'token\s*=\s*["\'][a-zA-Z0-9\-_]{16,}["\']', "Hardcoded token"),
+    (r'(api_key\s*=\s*)["\'][a-zA-Z0-9\-_]{16,}["\']', "Hardcoded API key"),
+    (r'(token\s*=\s*)["\'][a-zA-Z0-9\-_]{16,}["\']', "Hardcoded token"),
 ]
 
 REDACTION_PLACEHOLDER = "[REDACTED]"
@@ -37,7 +37,10 @@ def redact_secrets(code: str) -> tuple[str, list[str]]:
         matches = re.findall(pattern, redacted, re.IGNORECASE)
         if matches:
             found.append(label)
-            redacted = re.sub(pattern, REDACTION_PLACEHOLDER, redacted, flags=re.IGNORECASE)
+            # Patterns with a capture group preserve the key name (e.g. api_key = [REDACTED])
+            # so downstream AST parsers don't see broken attribute chains like `obj.[REDACTED]`.
+            replacement = (r'\1' + REDACTION_PLACEHOLDER) if '(' in pattern else REDACTION_PLACEHOLDER
+            redacted = re.sub(pattern, replacement, redacted, flags=re.IGNORECASE)
     return redacted, found
 
 

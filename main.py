@@ -53,10 +53,11 @@ Return valid JSON only. No markdown. No backticks. No preamble."""
 
 
 def build_llm_prompt(scanner_results: dict, filename: str, obligations: list[dict]) -> str:
-    # Summarise scanner findings for LLM
-    findings_summary = []
+    # Split findings by evidence type
+    data_flow_findings = []
+    pattern_findings = []
     for f in scanner_results.get("scanner_findings", []):
-        findings_summary.append({
+        entry = {
             "scanner": f["scanner_name"],
             "type": f["finding_type"],
             "title": f["title"],
@@ -64,7 +65,13 @@ def build_llm_prompt(scanner_results: dict, filename: str, obligations: list[dic
             "excerpt": (f.get("evidence_excerpt") or "")[:200],
             "tags": f.get("tags", []),
             "confidence": f.get("confidence", 0.8),
-        })
+        }
+        if f["scanner_name"] == "data_flow":
+            entry["source_variables"] = f.get("metadata", {}).get("source_variables", [])
+            entry["sink_name"] = f.get("metadata", {}).get("sink_name", "")
+            data_flow_findings.append(entry)
+        else:
+            pattern_findings.append(entry)
 
     summary = scanner_results.get("summary", {})
 
@@ -72,9 +79,7 @@ def build_llm_prompt(scanner_results: dict, filename: str, obligations: list[dic
     all_tags = {tag for f in scanner_results.get("scanner_findings", []) for tag in f.get("tags", [])}
     relevant_obligations = []
     for ob in obligations:
-        ob_tags = set(ob.get("trigger_conditions", []))
         code = ob.get("obligation_code", "")
-        # Include if any scanner tag matches obligation code prefix
         if any(code.startswith(tag.split("_ART")[0]) for tag in all_tags if "_ART" in tag):
             relevant_obligations.append({
                 "code": code,
@@ -85,7 +90,9 @@ def build_llm_prompt(scanner_results: dict, filename: str, obligations: list[dic
                 "severity": ob.get("severity_default", "high"),
             })
 
-    # Build these outside the f-string to avoid double-brace issues
+    # Build outside the f-string to avoid double-brace issues
+    data_flow_json = json.dumps(data_flow_findings, indent=2)
+    pattern_json = json.dumps(pattern_findings, indent=2)
     data_identified_json = json.dumps(summary.get('personal_data_categories', []))
     automated_decisions_str = str(summary.get('has_automated_decisions', False)).lower()
     ai_systems_list = [{"name": s["name"], "purpose": "detected by scanner", "risk_level": "unknown"} for s in summary.get('ai_systems_detected', [])]
@@ -93,8 +100,18 @@ def build_llm_prompt(scanner_results: dict, filename: str, obligations: list[dic
 
     prompt = f"""You are analysing code from file: {filename}
 
-DETERMINISTIC SCANNER RESULTS:
-{json.dumps(findings_summary, indent=2)}
+EVIDENCE CLASSIFICATION RULES:
+- AST-verified data flows are confirmed technical facts proven by static analysis of the AST.
+  Mark any finding derived from these as observed_or_inferred: "observed".
+- Pattern-match findings are inferred signals based on regex/keyword heuristics.
+  Mark any finding derived from these as observed_or_inferred: "inferred".
+- Use "needs_confirmation" only when neither applies or the evidence is ambiguous.
+
+AST-VERIFIED DATA FLOWS (treat as observed technical facts):
+{data_flow_json}
+
+PATTERN-MATCH FINDINGS (treat as inferred signals requiring confirmation):
+{pattern_json}
 
 SCANNER SUMMARY:
 - Personal data categories found: {summary.get('personal_data_categories', [])}
@@ -131,7 +148,7 @@ Based on the scanner evidence above, return this exact JSON:
       "gdpr_article": "e.g. Art. 22 GDPR or null",
       "file_hint": "line number or function name from scanner",
       "recommendation": "specific remediation step",
-      "observed_or_inferred": "observed|inferred|needs_confirmation",
+      "observed_or_inferred": "observed if derived from AST-verified data flows above, inferred if from pattern matching, needs_confirmation if ambiguous",
       "human_review_required": true,
       "uncertainties": ["what is uncertain"],
       "confidence": 0.85
