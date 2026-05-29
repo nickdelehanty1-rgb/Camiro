@@ -275,6 +275,22 @@ async def sample_privacy_notice():
     return {"text": text, "filename": "candidate_privacy_notice.md"}
 
 
+@app.get("/samples/hr-ai-dpia")
+async def sample_hr_ai_dpia():
+    """Return the AcmeHire HR AI DPIA for the guided demo flow."""
+    with open("samples/docs/hr_ai_dpia.md") as f:
+        text = f.read()
+    return {"text": text, "filename": "hr_ai_dpia.md"}
+
+
+@app.get("/samples/openai-dpa")
+async def sample_openai_dpa():
+    """Return the OpenAI DPA excerpt for the guided demo flow."""
+    with open("samples/docs/openai_dpa_excerpt.md") as f:
+        text = f.read()
+    return {"text": text, "filename": "openai_dpa_excerpt.md"}
+
+
 @app.get("/")
 async def root():
     with open("static/index.html") as f:
