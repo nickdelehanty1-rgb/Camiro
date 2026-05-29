@@ -6,6 +6,9 @@ import json
 import os
 import re
 import uuid
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from app.scanners.orchestrator import run_all_scanners
 from app.scanners.secret_scanner import redact_secrets
@@ -58,7 +61,7 @@ def build_llm_prompt(scanner_results: dict, filename: str, obligations: list[dic
             "type": f["finding_type"],
             "title": f["title"],
             "line": f.get("line_start"),
-            "excerpt": f.get("evidence_excerpt", "")[:200],
+            "excerpt": (f.get("evidence_excerpt") or "")[:200],
             "tags": f.get("tags", []),
             "confidence": f.get("confidence", 0.8),
         })
@@ -81,6 +84,12 @@ def build_llm_prompt(scanner_results: dict, filename: str, obligations: list[dic
                 "required_actions": ob.get("required_actions", [])[:3],
                 "severity": ob.get("severity_default", "high"),
             })
+
+    # Build these outside the f-string to avoid double-brace issues
+    data_identified_json = json.dumps(summary.get('personal_data_categories', []))
+    automated_decisions_str = str(summary.get('has_automated_decisions', False)).lower()
+    ai_systems_list = [{"name": s["name"], "purpose": "detected by scanner", "risk_level": "unknown"} for s in summary.get('ai_systems_detected', [])]
+    ai_systems_json = json.dumps(ai_systems_list)
 
     prompt = f"""You are analysing code from file: {filename}
 
@@ -128,9 +137,9 @@ Based on the scanner evidence above, return this exact JSON:
       "confidence": 0.85
     }}
   ],
-  "data_identified": {json.dumps(summary.get('personal_data_categories', []))},
-  "automated_decisions": {str(summary.get('has_automated_decisions', False)).lower()},
-  "ai_systems_detected": {json.dumps([{{"name": s["name"], "purpose": "detected by scanner", "risk_level": "unknown"}} for s in summary.get('ai_systems_detected', [])])},
+  "data_identified": {data_identified_json},
+  "automated_decisions": {automated_decisions_str},
+  "ai_systems_detected": {ai_systems_json},
   "immediate_actions": [
     "First complete actionable instruction based on scanner findings",
     "Second complete actionable instruction",
