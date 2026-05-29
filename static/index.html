@@ -141,6 +141,54 @@ textarea::placeholder{color:var(--light)}
 .sev-requires_review{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}
 .sev-observed{background:var(--green50);color:var(--green800);border:1px solid var(--green200)}
 .doc-type-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:5px 14px;border-radius:20px;background:var(--green50);color:var(--green800);border:1px solid var(--green200);margin-bottom:16px}
+
+/* DEMO CTA */
+.demo-cta{background:#fff;border:1.5px solid var(--green200);border-radius:14px;padding:20px 24px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.demo-cta-info{flex:1;min-width:0}
+.demo-cta-title{font-size:14px;font-weight:600;color:var(--forest);margin-bottom:3px}
+.demo-cta-sub{font-size:12px;color:var(--muted);line-height:1.5}
+.demo-btn{padding:11px 18px;background:var(--forest);color:var(--mint);font-size:13px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;flex-shrink:0;transition:background 0.15s}
+.demo-btn:hover{background:var(--green)}
+.demo-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* DEMO STEPS */
+.step-list{max-width:420px;margin:20px auto 0}
+.step-item{display:flex;align-items:center;gap:12px;padding:7px 0;font-size:13.5px;color:var(--light);transition:color 0.2s}
+.step-item.active{color:var(--text)}
+.step-item.done{color:var(--green800)}
+.step-icon{width:20px;text-align:center;flex-shrink:0;font-size:13px;line-height:1}
+.step-spinner{width:13px;height:13px;border:2px solid var(--sage);border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* DEMO VERDICT */
+.demo-verdict{padding:20px 24px;background:var(--forest);border-radius:12px;margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.demo-verdict-left{flex:1;min-width:0}
+.demo-verdict-headline{font-size:20px;font-weight:600;color:#fff;letter-spacing:-0.3px;margin-bottom:5px;line-height:1.3}
+.demo-verdict-sub{font-size:13px;color:var(--mint);line-height:1.5}
+
+/* GAP CARDS */
+.gap-section-label{font-size:11px;font-weight:500;color:var(--light);letter-spacing:0.5px;text-transform:uppercase;margin:0 0 8px}
+.gap-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;background:#fff}
+.gap-card:hover{border-color:#C9D5C0}
+.gap-card-head{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--sand)}
+.gap-card-body{display:grid;grid-template-columns:1fr 1fr 160px}
+.gap-col{padding:13px 15px;border-right:1px solid var(--border)}
+.gap-col:last-child{border-right:none}
+.gap-col-lbl{font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--light);margin-bottom:7px}
+.gap-ev-title{font-size:12.5px;font-weight:500;color:var(--text);margin-bottom:4px;line-height:1.4}
+.gap-ev-detail{font-size:11.5px;color:var(--muted);line-height:1.5}
+.gap-file-ref{font-size:10.5px;font-family:'SF Mono',Menlo,monospace;color:var(--light);background:var(--sand);padding:2px 7px;border-radius:4px;display:inline-block;margin:4px 0}
+.gap-absent{font-size:11.5px;font-weight:600;color:#92400E;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.2px}
+.gap-article-tag{font-size:11px;font-weight:500;color:var(--green800);background:var(--green50);border:1px solid var(--green200);padding:2px 9px;border-radius:20px;white-space:nowrap}
+.conf-bar-wrap{height:3px;background:var(--border);border-radius:2px;margin:6px 0 3px;overflow:hidden}
+.conf-bar{height:100%;background:var(--sage);border-radius:2px}
+
+/* EVIDENCE BADGES */
+.badge{display:inline-flex;align-items:center;font-size:10.5px;font-weight:600;letter-spacing:0.3px;text-transform:uppercase;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.badge-observed{background:var(--green50);color:var(--green800);border:1px solid var(--green200)}
+.badge-missing{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
+.badge-contradiction{background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA}
+.badge-review{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}
 .finding-desc{font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:8px}
 .finding-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .finding-hint{font-size:11px;font-family:monospace;color:var(--light);background:var(--sand);padding:3px 8px;border-radius:5px}
@@ -204,6 +252,13 @@ textarea::placeholder{color:var(--light)}
 <main class="main">
 
   <div id="inputView">
+    <div class="demo-cta">
+      <div class="demo-cta-info">
+        <div class="demo-cta-title">Run AcmeHire Demo</div>
+        <div class="demo-cta-sub">See Camiro compare a recruitment AI codebase against its privacy notice — code scan, AST taint tracing, document analysis, and contradiction detection.</div>
+      </div>
+      <button class="demo-btn" id="demoBtnMain" onclick="runDemo()">Run 90-second demo &rarr;</button>
+    </div>
     <div class="input-card">
       <div class="input-tabs">
         <button class="tab-btn active" onclick="switchTab('paste')">Paste code</button>
@@ -288,6 +343,28 @@ def score_candidate(user_id, cv_text, age, gender):
     <div class="loading-sub">Cross-referencing EU AI Act (2024/1689) and GDPR (2016/679)</div>
   </div>
 
+  <div id="demoLoadingView" class="loading hidden">
+    <div class="loading-tree">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <ellipse cx="26" cy="17" rx="15" ry="11" fill="#B7E4C7"/>
+        <ellipse cx="16" cy="25" rx="10" ry="7.5" fill="#B7E4C7"/>
+        <ellipse cx="36" cy="25" rx="10" ry="7.5" fill="#B7E4C7"/>
+        <rect x="23.5" y="33" width="5" height="10" rx="2.5" fill="#52B788"/>
+      </svg>
+    </div>
+    <div class="loading-text">Running AcmeHire analysis&hellip;</div>
+    <div class="loading-sub">Scanning code, tracing data flows, comparing document claims</div>
+    <div class="step-list">
+      <div class="step-item" id="step-0"><span class="step-icon">&middot;</span><span>Loading AcmeHire recruitment system</span></div>
+      <div class="step-item" id="step-1"><span class="step-icon">&middot;</span><span>Redacting secrets and credentials</span></div>
+      <div class="step-item" id="step-2"><span class="step-icon">&middot;</span><span>Running 11 deterministic scanners</span></div>
+      <div class="step-item" id="step-3"><span class="step-icon">&middot;</span><span>Tracing personal data flows (AST)</span></div>
+      <div class="step-item" id="step-4"><span class="step-icon">&middot;</span><span>Building evidence graph</span></div>
+      <div class="step-item" id="step-5"><span class="step-icon">&middot;</span><span>Comparing privacy notice claims</span></div>
+      <div class="step-item" id="step-6"><span class="step-icon">&middot;</span><span>Mapping to GDPR and EU AI Act obligations</span></div>
+    </div>
+  </div>
+
   <div id="resultsView" class="results hidden">
 
     <div id="docTypeBadge" class="doc-type-badge hidden"></div>
@@ -298,7 +375,7 @@ def score_candidate(user_id, cv_text, age, gender):
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2"/>
         </svg>
-        Download PDF
+        Download Evidence Pack
       </button>
     </div>
 
@@ -343,11 +420,39 @@ def score_candidate(user_id, cv_text, age, gender):
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2"/>
         </svg>
-        Download PDF
+        Download Evidence Pack
       </button>
     </div>
 
     <button class="scan-again" id="scanAgainBtn" onclick="reset()">← Scan different code</button>
+  </div>
+
+  <!-- Demo results view -->
+  <div id="demoResultsView" class="results hidden">
+
+    <div class="demo-verdict">
+      <div class="demo-verdict-left">
+        <div class="demo-verdict-headline">Code and privacy notice do not match.</div>
+        <div class="demo-verdict-sub">Camiro found <strong id="gapCount" style="color:#fff">0</strong> evidence-backed gaps between what the AcmeHire codebase does and what the privacy notice discloses.</div>
+      </div>
+      <button class="pdf-btn" onclick="downloadPDF()">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2"/></svg>
+        Download Evidence Pack
+      </button>
+    </div>
+
+    <div class="gap-section-label">Evidence gaps — code vs. privacy notice</div>
+    <div id="gapCards"></div>
+
+    <div id="demoAdditional"></div>
+
+    <div style="margin-top:16px;padding:12px 14px;background:var(--sand);border-radius:8px;font-size:11.5px;color:var(--light);line-height:1.5">
+      This report is generated for informational purposes only and does not constitute legal advice. All findings should be reviewed by a qualified legal professional before reliance. Camiro is decision support, not a substitute for legal counsel.
+    </div>
+
+    <div style="margin-top:10px;font-size:11px;color:var(--light)">Generated by Camiro &middot; AcmeHire Demo &middot; <span id="demoDate"></span></div>
+
+    <button class="scan-again" onclick="resetDemo()">&larr; Back to scanner</button>
   </div>
 
 </main>
@@ -857,6 +962,217 @@ function downloadPDF() {
 
   const filename = (currentData._filename||'code').replace(/[^a-z0-9]/gi,'_');
   doc.save(`camiro_compliance_${filename}_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+// ── Demo flow ──────────────────────────────────────────────────────────────────
+
+const _STEP_DELAYS = [450, 550, 650, 700, 650, 600, 550];
+const _N_STEPS = 7;
+
+function _animateSteps() {
+  return new Promise(resolve => {
+    let i = 0;
+    function tick() {
+      if (i > 0) {
+        const prev = document.getElementById('step-' + (i - 1));
+        if (prev) {
+          prev.classList.remove('active');
+          prev.classList.add('done');
+          prev.querySelector('.step-icon').textContent = '✓';
+        }
+      }
+      if (i < _N_STEPS) {
+        const curr = document.getElementById('step-' + i);
+        if (curr) {
+          curr.classList.add('active');
+          curr.querySelector('.step-icon').innerHTML = '<div class="step-spinner"></div>';
+        }
+        i++;
+        setTimeout(tick, _STEP_DELAYS[i - 1] || 600);
+      } else {
+        setTimeout(resolve, 300);
+      }
+    }
+    tick();
+  });
+}
+
+async function runDemo() {
+  const btn = document.getElementById('demoBtnMain');
+  if (btn) btn.disabled = true;
+
+  // Reset steps
+  for (let i = 0; i < _N_STEPS; i++) {
+    const el = document.getElementById('step-' + i);
+    if (el) { el.className = 'step-item'; el.querySelector('.step-icon').textContent = '·'; }
+  }
+
+  document.getElementById('inputView').classList.add('hidden');
+  document.getElementById('demoLoadingView').classList.remove('hidden');
+
+  const animPromise = _animateSteps();
+
+  try {
+    const [acmeRes, noticeRes] = await Promise.all([
+      fetch('/samples/acmehire').then(r => r.json()),
+      fetch('/samples/privacy-notice').then(r => r.json()),
+    ]);
+
+    const codeResult = await fetch('/analyse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: acmeRes.code, filename: acmeRes.filename }),
+    }).then(r => r.json());
+    if (codeResult.detail) throw new Error(codeResult.detail);
+
+    lastCodeSummary = _buildCodeSummary(codeResult);
+
+    const docResult = await fetch('/scan/document', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: noticeRes.text,
+        filename: noticeRes.filename,
+        code_summary: lastCodeSummary,
+      }),
+    }).then(r => r.json());
+    if (docResult.detail) throw new Error(docResult.detail);
+
+    await animPromise;
+    document.getElementById('demoLoadingView').classList.add('hidden');
+    _renderDemo(codeResult, docResult);
+
+  } catch (e) {
+    await animPromise;
+    document.getElementById('demoLoadingView').classList.add('hidden');
+    document.getElementById('inputView').classList.remove('hidden');
+    if (btn) btn.disabled = false;
+    alert('Demo error: ' + e.message + '\n\nMake sure the server is running with a valid API key.');
+  }
+}
+
+const _BADGE = {
+  missing_evidence: { cls: 'badge-missing',       label: 'MISSING FROM NOTICE' },
+  contradiction:    { cls: 'badge-contradiction',  label: 'CONTRADICTION'       },
+  requires_review:  { cls: 'badge-review',         label: 'REQUIRES REVIEW'     },
+  observed:         { cls: 'badge-observed',        label: 'OBSERVED IN CODE'    },
+};
+
+function _buildGapCards(codeResult, docResult) {
+  const docFindings = (docResult.findings || [])
+    .filter(f => ['missing_evidence', 'contradiction'].includes(f.finding_type));
+  const codeFindings = codeResult.findings || [];
+  const usedCode = new Set();
+
+  const MATCH = {
+    ai_disclosure:                 f => /openai|anthropic|\bai\b|processor|third.party/i.test(f.title + (f.description || '')),
+    vendor_not_named:              f => /processor|dpa|vendor/i.test(f.title),
+    automated_decision_disclosure: f => /automat|human oversight|human review/i.test(f.title),
+    special_category_disclosure:   f => /special category|art\.?\s*9|ethnicity|health|disability/i.test(f.title + (f.gdpr_article || '')),
+    rights_incomplete:             f => /art\.?\s*5|art\.?\s*13|personal data/i.test(f.title + (f.gdpr_article || '')),
+    data_subject_rights:           f => /right|access|erasure/i.test(f.title),
+    retention_period:              f => /retention/i.test(f.title),
+    lawful_basis:                  f => /lawful|legal basis|art\.?\s*6/i.test(f.title),
+  };
+
+  return docFindings.map(docF => {
+    const gap = ((docF.metadata || {}).gap) || '';
+    const matcher = MATCH[gap];
+    let codeF = null;
+    if (matcher) {
+      codeF = codeFindings.find(f => !usedCode.has(f.title) && matcher(f));
+      if (codeF) usedCode.add(codeF.title);
+    }
+    return { docF, codeF };
+  }).slice(0, 4);
+}
+
+function _renderGapCard({ docF, codeF }) {
+  const badge = _BADGE[docF.finding_type] || _BADGE.requires_review;
+  const articles = [docF.gdpr_article, docF.ai_act_article].filter(Boolean).join(' &middot; ');
+  const pct = Math.round((docF.confidence || 0.8) * 100);
+
+  const codeCol = codeF
+    ? `<div class="gap-ev-title">${codeF.title}</div>
+       ${codeF.file_hint ? `<div class="gap-file-ref">${codeF.file_hint}</div>` : ''}
+       <div class="gap-ev-detail">${(codeF.description || '').slice(0, 130)}&hellip;</div>`
+    : `<div class="gap-ev-title">Detected by code scanner</div>
+       <div class="gap-ev-detail">Personal data processing identified in codebase</div>`;
+
+  const docLabel = docF.finding_type === 'missing_evidence' ? 'NOT DISCLOSED' : 'CONTRADICTS CODE';
+  const docDesc = (docF.title || '').replace(/^Privacy notice\s*(does not|doesn't)\s*/i, '').trim();
+
+  return `<div class="gap-card">
+    <div class="gap-card-head">
+      <span class="badge ${badge.cls}">${badge.label}</span>
+      ${articles ? `<span class="gap-article-tag">${articles}</span>` : ''}
+    </div>
+    <div class="gap-card-body">
+      <div class="gap-col">
+        <div class="gap-col-lbl">Code reality</div>
+        ${codeCol}
+      </div>
+      <div class="gap-col">
+        <div class="gap-col-lbl">Document claim</div>
+        <div class="gap-absent">${docLabel}</div>
+        <div class="gap-ev-detail">${docDesc}</div>
+      </div>
+      <div class="gap-col">
+        <div class="gap-col-lbl">Confidence</div>
+        <div class="conf-bar-wrap"><div class="conf-bar" style="width:${pct}%"></div></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${pct}%</div>
+        <div style="margin-top:8px;font-size:11px;color:var(--light)">Human review<br>required</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function _renderDemo(codeResult, docResult) {
+  const gaps = (docResult.findings || []).filter(
+    f => ['missing_evidence', 'contradiction'].includes(f.finding_type)
+  );
+  document.getElementById('gapCount').textContent = gaps.length;
+
+  const cards = _buildGapCards(codeResult, docResult);
+  document.getElementById('gapCards').innerHTML = cards.map(_renderGapCard).join('');
+
+  // Additional code findings (after the gap cards)
+  const extra = (codeResult.findings || []).slice(0, 4);
+  document.getElementById('demoAdditional').innerHTML = extra.length
+    ? `<div class="gap-section-label" style="margin-top:20px">Additional code findings</div>
+       ${extra.map(f => `<div class="finding">
+         <div class="finding-top">
+           <div class="finding-title">${f.title}</div>
+           <span class="sev sev-${f.severity || 'info'}">${f.severity || 'info'}</span>
+         </div>
+         <div class="finding-desc">${f.description || ''}</div>
+         <div class="finding-meta">
+           ${f.file_hint ? `<span class="finding-hint">${f.file_hint}</span>` : ''}
+           ${[f.ai_act_article, f.gdpr_article].filter(Boolean).map(c => `<span class="finding-cite">&#9878; ${c}</span>`).join('')}
+         </div>
+       </div>`).join('')}`
+    : '';
+
+  document.getElementById('demoDate').textContent = new Date().toLocaleDateString(
+    'en-IE', { day: 'numeric', month: 'long', year: 'numeric' }
+  );
+
+  // Store for PDF download compatibility
+  currentData = Object.assign({}, codeResult, {
+    _filename: 'AcmeHire_Demo',
+    _isDemo: true,
+    _date: new Date().toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' }),
+  });
+
+  document.getElementById('demoResultsView').classList.remove('hidden');
+}
+
+function resetDemo() {
+  document.getElementById('demoResultsView').classList.add('hidden');
+  document.getElementById('inputView').classList.remove('hidden');
+  const btn = document.getElementById('demoBtnMain');
+  if (btn) btn.disabled = false;
+  currentData = null;
 }
 </script>
 </body>

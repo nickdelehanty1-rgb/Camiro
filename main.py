@@ -248,6 +248,7 @@ def _doc_finding_to_output(f: dict) -> dict:
         "human_review_required": finding_type != "observed",
         "uncertainties": [],
         "confidence": f.get("confidence", 0.8),
+        "metadata": f.get("metadata", {}),
     }
 
 
@@ -256,6 +257,22 @@ def _doc_finding_to_output(f: dict) -> dict:
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "Camiro"}
+
+
+@app.get("/samples/acmehire")
+async def sample_acmehire():
+    """Return the AcmeHire demo code sample for the guided demo flow."""
+    with open("samples/acmehire/app.py") as f:
+        code = f.read()
+    return {"code": code, "filename": "acmehire/app.py"}
+
+
+@app.get("/samples/privacy-notice")
+async def sample_privacy_notice():
+    """Return the AcmeHire candidate privacy notice for the guided demo flow."""
+    with open("samples/docs/candidate_privacy_notice.md") as f:
+        text = f.read()
+    return {"text": text, "filename": "candidate_privacy_notice.md"}
 
 
 @app.get("/")
