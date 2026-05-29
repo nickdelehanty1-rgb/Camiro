@@ -4,6 +4,7 @@ from .data_scanner import PersonalDataScanner, SpecialCategoryScanner
 from .ai_scanner import AIUsageScanner, AutomatedDecisionScanner
 from .vendor_scanner import VendorScanner, DataStorageScanner, RetentionDeletionScanner, LoggingScanner
 from .security_scanner import CookieTrackingScanner, SecurityControlScanner
+from .data_flow_scanner import DataFlowScanner
 
 
 ALL_SCANNERS = [
@@ -18,6 +19,7 @@ ALL_SCANNERS = [
     LoggingScanner(),
     CookieTrackingScanner(),
     SecurityControlScanner(),
+    DataFlowScanner(),
 ]
 
 
