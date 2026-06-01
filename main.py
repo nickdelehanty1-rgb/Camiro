@@ -313,6 +313,12 @@ async def root():
         return HTMLResponse(f.read())
 
 
+@app.get("/landing")
+async def landing():
+    with open("static/landing.html") as f:
+        return HTMLResponse(f.read())
+
+
 @app.post("/analyse")
 async def analyse(inp: CodeInput):
     """Backward-compatible demo endpoint. Now uses full scanner + graph + LLM pipeline."""
