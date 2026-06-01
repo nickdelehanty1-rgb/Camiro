@@ -233,6 +233,25 @@ textarea::placeholder{color:var(--light)}
 .task-role ul{list-style:none;padding:0;margin:0}
 .task-role li{font-size:12px;color:var(--muted);padding:3px 0 3px 14px;position:relative;line-height:1.4}
 .task-role li::before{content:"–";position:absolute;left:0;color:var(--light)}
+
+/* WHY CAMIRO COMPARISON TABLE */
+.why-table-wrap{overflow-x:auto;margin-bottom:20px}
+.why-table{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:12px}
+.why-table thead tr{background:var(--forest)}
+.why-table th{padding:10px 13px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;border-right:1px solid rgba(255,255,255,0.12);white-space:nowrap}
+.why-table th:last-child{border-right:none}
+.why-col-label{color:var(--mint)}
+.why-col-camiro{color:var(--sage)}
+.why-table tbody tr{border-bottom:1px solid var(--border)}
+.why-table tbody tr:last-child{border-bottom:none}
+.why-table tbody tr:hover td{background:var(--sand)}
+.why-table td{padding:9px 13px;vertical-align:top;border-right:1px solid var(--border);line-height:1.45;color:var(--text)}
+.why-table td:last-child{border-right:none}
+.why-row-label{font-weight:500;color:var(--forest);white-space:nowrap}
+.why-cell-weak{color:var(--muted)}
+.why-cell-camiro{color:var(--forest)}
+.why-check{color:var(--sage);font-weight:700;margin-right:3px}
+.why-cross{color:var(--light);margin-right:3px}
 .finding-desc{font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:8px}
 .finding-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .finding-hint{font-size:11px;font-family:monospace;color:var(--light);background:var(--sand);padding:3px 8px;border-radius:5px}
@@ -504,6 +523,58 @@ def score_candidate(user_id, cv_text, age, gender):
       <div class="agent-step"><span class="agent-step-ck">&#10003;</span><div><div class="agent-step-txt">Claims compared against code reality</div><div class="agent-step-sub">Privacy notice does not disclose AI-assisted screening, automated decisions, or special-category data</div></div></div>
       <div class="agent-step"><span class="agent-step-ck">&#10003;</span><div><div class="agent-step-txt">Obligations mapped</div><div class="agent-step-sub">GDPR Art. 13&ndash;14, Art. 9/10, Art. 22, Art. 28/44 &middot; AI Act Art. 6 + Annex III, Art. 14/26 review</div></div></div>
       <div class="agent-step"><span class="agent-step-ck">&#10003;</span><div><div class="agent-step-txt">Evidence pack generated</div><div class="agent-step-sub">Human review required before relying on existing documents</div></div></div>
+    </div>
+
+    <!-- Why Camiro comparison -->
+    <div class="why-table-wrap">
+      <table class="why-table">
+        <thead>
+          <tr>
+            <th style="width:14%;color:var(--mint)">Capability</th>
+            <th style="width:29%" class="why-col-label">Raw LLM<br><span style="font-weight:400;font-size:9px;opacity:0.8">Asking Claude or ChatGPT directly</span></th>
+            <th style="width:29%" class="why-col-label">Generic compliance scanner<br><span style="font-weight:400;font-size:9px;opacity:0.8">Keyword / regex rules only</span></th>
+            <th style="width:28%" class="why-col-camiro">Camiro<br><span style="font-weight:400;font-size:9px;opacity:0.8">This review</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="why-row-label">Evidence quality</td>
+            <td class="why-cell-weak"><span class="why-cross">–</span>Generates plausible-sounding output with no citations to actual code lines or document text. Cannot distinguish what code does from what it claims to do.</td>
+            <td class="why-cell-weak"><span class="why-cross">–</span>Flags patterns that match rules. No evidence of what data actually flows where, or whether documents address the risk.</td>
+            <td class="why-cell-camiro"><span class="why-check">✓</span>Each finding is anchored to a specific code line, AST-verified data flow, or named document. Evidence type labelled: observed, not evidenced, or requires review.</td>
+          </tr>
+          <tr>
+            <td class="why-row-label">Line-level tracing</td>
+            <td class="why-cell-weak"><span class="why-cross">–</span>Cannot statically trace which variables carry personal data and which API calls receive them. Hallucination risk on specific line numbers.</td>
+            <td class="why-cell-weak"><span class="why-cross">–</span>Pattern matches on token presence (e.g. "openai" in file). Does not trace data from source variable to sink.</td>
+            <td class="why-cell-camiro"><span class="why-check">✓</span>AST-based taint analysis traces <code style="font-size:11px;background:var(--sand);padding:1px 4px;border-radius:3px">candidate</code> → <code style="font-size:11px;background:var(--sand);padding:1px 4px;border-radius:3px">prompt</code> → <code style="font-size:11px;background:var(--sand);padding:1px 4px;border-radius:3px">openai.chat.completions.create</code> at line 88.</td>
+          </tr>
+          <tr>
+            <td class="why-row-label">Article citation</td>
+            <td class="why-cell-weak"><span class="why-cross">–</span>Cites articles from training data. May cite the right article for the wrong reason, or miss articles that apply to the specific code pattern found.</td>
+            <td class="why-cell-weak"><span class="why-cross">–</span>Rule tags map patterns to articles, but without context on what data is involved or what documents say, citation accuracy is limited.</td>
+            <td class="why-cell-camiro"><span class="why-check">✓</span>Citations derived from the 24-obligation seed corpus, matched to scanner evidence. E.g. Art. 22 triggered because automated rejection was traced, not just because "reject" appeared.</td>
+          </tr>
+          <tr>
+            <td class="why-row-label">Document cross-check</td>
+            <td class="why-cell-weak"><span class="why-cross">–</span>Would need the document pasted in. Cannot compare a privacy notice claim against what the code actually does at a specific line.</td>
+            <td class="why-cell-weak"><span class="why-cross">–</span>Scans code only. Does not read or cross-reference compliance documents.</td>
+            <td class="why-cell-camiro"><span class="why-check">✓</span>Privacy notice, DPIA, and vendor DPA read and compared against code findings. Contradiction at Art. 22: DPIA draft does not address automated decisions that code confirms exist.</td>
+          </tr>
+          <tr>
+            <td class="why-row-label">Observed vs inferred</td>
+            <td class="why-cell-weak"><span class="why-cross">–</span>All output is model inference. No distinction between what was seen in the code and what was assumed.</td>
+            <td class="why-cell-weak"><span class="why-cross">–</span>All findings are pattern-match inferences. Confidence is uniform; no higher-certainty class for verified flows.</td>
+            <td class="why-cell-camiro"><span class="why-check">✓</span>AST-verified data flows labelled <em>observed</em>. Pattern-match findings labelled <em>inferred</em>. Reviewers know which findings are proven vs signalled.</td>
+          </tr>
+          <tr>
+            <td class="why-row-label">Actionable task</td>
+            <td class="why-cell-weak"><span class="why-cross">–</span>Produces generic recommendations ("update your privacy notice") with no role assignment, no specific file reference, and no link to what evidence is missing.</td>
+            <td class="why-cell-weak"><span class="why-cross">–</span>Recommendations are rule-level ("add consent mechanism"). Not tied to specific code locations or document gaps.</td>
+            <td class="why-cell-camiro"><span class="why-check">✓</span>Tasks split by role — privacy counsel, DPO, engineering, AI governance — each with a specific gap to address and the evidence that triggered it.</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Evidence gap matrix -->
