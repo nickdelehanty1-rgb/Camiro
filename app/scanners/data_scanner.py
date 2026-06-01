@@ -1,6 +1,15 @@
 import re
 from .base import BaseScanner, ScannerFinding
 
+# Phrases that indicate a prohibition/guardrail instruction rather than actual processing.
+# Checked within an 80-character window around the special-category term match.
+_GUARDRAIL_RE = re.compile(
+    r'\b(do\s+not|avoid|prohibited|not\s+use|not\s+rank|not\s+filter|not\s+include|'
+    r'exclude|never|must\s+not|should\s+not|don\'t|cannot|refuse|forbidden|'
+    r'prevent|disallow|ignore|rather\s+than|instead\s+of|without\s+regard\s+to)\b',
+    re.IGNORECASE
+)
+
 # Personal data field patterns — variable names, schema columns, JSON keys
 PERSONAL_DATA_PATTERNS = {
     "name": [r'\b(full_name|first_name|last_name|surname|forename|given_name|user_name|username)\b'],
@@ -84,15 +93,50 @@ class SpecialCategoryScanner(BaseScanner):
     def scan(self, code: str, filename: str = "") -> list[ScannerFinding]:
         findings = []
         found_categories = set()
+        found_guardrails = set()
 
         for category, patterns in SPECIAL_CATEGORY_PATTERNS.items():
             for pattern_str in patterns:
                 pattern = re.compile(pattern_str, re.IGNORECASE)
                 matches = self._find_lines_matching(code, pattern)
                 for line_num, line_text in matches:
+                    # Check guardrail context: is the term in a prohibition/instruction string?
+                    m = pattern.search(line_text)
+                    match_pos = m.start() if m else 0
+                    window_start = max(0, match_pos - 80)
+                    window_end = min(len(line_text), match_pos + 80)
+                    in_guardrail = bool(_GUARDRAIL_RE.search(line_text[window_start:window_end]))
+
+                    if in_guardrail:
+                        # Low-confidence guardrail reference — record but keep scanning
+                        # for a genuine processing match later in the file.
+                        if category not in found_guardrails:
+                            found_guardrails.add(category)
+                            findings.append(ScannerFinding(
+                                scanner_name=self.name,
+                                finding_type="guardrail_reference",
+                                title=f"Prompt guardrail references {category.replace('_', ' ')} — not data processing",
+                                description=(
+                                    f"The term '{category.replace('_', ' ')}' appears in a prohibition or "
+                                    f"instruction context (e.g. 'do not use', 'avoid', 'excluded'). "
+                                    f"This is likely a prompt guardrail or policy instruction, not "
+                                    f"evidence that the system processes {category.replace('_', ' ')} data. "
+                                    f"Verify whether actual data of this category is processed elsewhere."
+                                ),
+                                confidence=0.40,
+                                file_path=filename,
+                                line_start=line_num,
+                                evidence_excerpt=self._excerpt(line_text),
+                                tags=["guardrail_reference", "requires_review", category],
+                                suggested_node_type="data_element",
+                                metadata={"special_category": category, "context": "guardrail"}
+                            ))
+                        # Do NOT break — continue scanning for non-guardrail matches
+                        continue
+
+                    # High-confidence: term in variable, field, query, or assignment context
                     if category not in found_categories:
                         found_categories.add(category)
-                        # Criminal-offence data is governed by Art. 10, not Art. 9
                         is_criminal = category == "criminal"
                         if is_criminal:
                             title = f"GDPR Article 10 criminal-offence data: {category.replace('_', ' ').title()}"
@@ -126,6 +170,6 @@ class SpecialCategoryScanner(BaseScanner):
                             suggested_node_type="data_element",
                             metadata={"special_category": category}
                         ))
-                    break
+                    break  # Found a definitive processing match; stop scanning this category
 
         return findings

@@ -78,6 +78,46 @@ AI_PROVIDER_PATTERNS = {
         r'from xgboost import',
         r'XGBClassifier|XGBRegressor',
     ],
+    # Generic LLM client interfaces — catches systems built on top of any model
+    "Generic LLM Client": [
+        r'\bllm\.complete\s*\(',
+        r'\bllm\.chat\s*\(',
+        r'\bllm\.generate\s*\(',
+        r'\bllm\.run\s*\(',
+        r'\bllm\.call\s*\(',
+        r'\b(LlmClient|AIClient|ModelClient|MockLlmClient|BaseLLM)\b',
+        r'\bllm_client\s*=',
+        r'\bai_client\s*=',
+        r'\bmodel_client\s*=',
+    ],
+    # LLM API call signatures — parameter names only possible in model API calls
+    "LLM API Signature": [
+        r'"role"\s*:\s*"system"',
+        r"'role'\s*:\s*'system'",
+        r'\bmax_tokens\s*=\s*\d',
+        r'\bmaxTokens\s*[:=]\s*\d',
+        r'\bprompt_tokens\b|\bpromptTokens\b',
+        r'\btemperature\s*=\s*[01]\.',
+        r'\bsystem_message\s*=\s*["\']',
+        r'\bsystem_prompt\s*=\s*["\']',
+    ],
+    # AI service layer class names — moderation, recommendation, classification
+    "AI Service Layer": [
+        r'\bModerationService\b|\bProfileModerationService\b',
+        r'\bRecommendationService\b|\bMatchRecommendationService\b',
+        r'\bSafetyService\b|\bMessageSafetyService\b|\bContentSafetyService\b',
+        r'\bClassificationService\b|\bRankingService\b|\bScoringService\b',
+        r'\bCompatibilityService\b|\bMatchingService\b',
+        r'\bAIService\b|\bMLService\b|\bModelService\b',
+    ],
+    # AI-named output variables — explicit "ai" or "llm" prefix in field names
+    "AI-Named Output": [
+        r'\bai[_]?(explanation|score|rating|recommendation|result|decision|label)\b',
+        r'\baiExplanation\b|\baiScore\b|\baiRating\b|\baiDecision\b',
+        r'\bcompatibilityScore\b|\bcompatibility_score\b',
+        r'\brecommendedAction\b|\brecommended_action\b',
+        r'\bllm[_]?(response|output|result|completion)\b',
+    ],
 }
 
 # Automated decision-making patterns
