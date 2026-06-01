@@ -309,13 +309,13 @@ async def sample_acmehire_agent_log():
 
 @app.get("/")
 async def root():
-    with open("static/index.html") as f:
+    with open("static/landing.html") as f:
         return HTMLResponse(f.read())
 
 
-@app.get("/landing")
-async def landing():
-    with open("static/landing.html") as f:
+@app.get("/scanner")
+async def scanner():
+    with open("static/index.html") as f:
         return HTMLResponse(f.read())
 
 
