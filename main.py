@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 logger.info(f"PORT env var: {os.environ.get('PORT', 'NOT SET')}")
 logger.info(f"All env vars with PORT: {[(k, v) for k, v in os.environ.items() if 'PORT' in k.upper()]}")
 
-from app.scanners.orchestrator import run_all_scanners, run_document_scan
+from app.scanners.orchestrator import run_all_scanners, run_document_scan, run_agent_scan
 from app.scanners.secret_scanner import redact_secrets
 from app.graph.builder import GraphBuilder
 from app.corpus.loader import load_obligation_seeds, load_corpus_registry
@@ -289,6 +289,22 @@ async def sample_openai_dpa():
     with open("samples/docs/openai_dpa_excerpt.md") as f:
         text = f.read()
     return {"text": text, "filename": "openai_dpa_excerpt.md"}
+
+
+@app.get("/samples/acmehire-agent")
+async def sample_acmehire_agent():
+    """Return the AcmeHire agent code sample."""
+    with open("samples/acmehire_agent/agent.py") as f:
+        code = f.read()
+    return {"code": code, "filename": "acmehire_agent/agent.py"}
+
+
+@app.get("/samples/acmehire-agent-log")
+async def sample_acmehire_agent_log():
+    """Return the AcmeHire agent action log."""
+    with open("samples/acmehire_agent/agent_action_log.json") as f:
+        content = f.read()
+    return {"content": content, "filename": "acmehire_agent/agent_action_log.json"}
 
 
 @app.get("/")

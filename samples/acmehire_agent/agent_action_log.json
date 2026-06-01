@@ -1,0 +1,140 @@
+[
+  {
+    "timestamp": "2024-03-15T09:00:00Z",
+    "event_type": "agent_start",
+    "agent": "hr_screening_agent",
+    "job_id": 42,
+    "mode": "autonomous_batch"
+  },
+  {
+    "timestamp": "2024-03-15T09:00:01Z",
+    "event_type": "model_call",
+    "model": "claude-sonnet-4-6",
+    "candidate_id": 1001,
+    "input_preview": "Screen this candidate for job 42: Name: Sarah Murphy, Email: sarah.murphy@gmail.com, Age: 28, Gender: Female, Ethnicity: Irish, Disability: None, Accommodation needs: None, Criminal record: None, Expected salary: 55000"
+  },
+  {
+    "timestamp": "2024-03-15T09:00:02Z",
+    "event_type": "tool_call",
+    "tool": "get_candidate",
+    "candidate_id": 1001,
+    "result_preview": "name: Sarah Murphy, email: sarah.murphy@gmail.com, ethnicity: Irish, disability: None, criminal_record: None"
+  },
+  {
+    "timestamp": "2024-03-15T09:00:03Z",
+    "event_type": "tool_call",
+    "tool": "update_candidate_status",
+    "candidate_id": 1001,
+    "status": "rejected",
+    "score": 4.5
+  },
+  {
+    "timestamp": "2024-03-15T09:00:04Z",
+    "event_type": "tool_call",
+    "tool": "send_rejection_email",
+    "candidate_id": 1001,
+    "recipient": "sarah.murphy@gmail.com",
+    "name": "Sarah Murphy",
+    "reason": "Score below threshold"
+  },
+  {
+    "timestamp": "2024-03-15T09:00:12Z",
+    "event_type": "model_call",
+    "model": "claude-sonnet-4-6",
+    "candidate_id": 1002,
+    "input_preview": "Screen this candidate for job 42: Name: James O'Brien, Age: 34, Ethnicity: Irish Traveller, Disability: Dyslexia, Criminal record: Minor caution 2019, Expected salary: 48000"
+  },
+  {
+    "timestamp": "2024-03-15T09:00:14Z",
+    "event_type": "tool_call",
+    "tool": "get_candidate",
+    "candidate_id": 1002,
+    "result_preview": "name: James O'Brien, email: james.obrien@hotmail.com, ethnicity: Irish Traveller, disability: Dyslexia, criminal_record: Minor caution 2019"
+  },
+  {
+    "timestamp": "2024-03-15T09:00:15Z",
+    "event_type": "tool_call",
+    "tool": "update_candidate_status",
+    "candidate_id": 1002,
+    "status": "rejected",
+    "score": 3.2
+  },
+  {
+    "timestamp": "2024-03-15T09:00:16Z",
+    "event_type": "tool_call",
+    "tool": "send_rejection_email",
+    "candidate_id": 1002,
+    "recipient": "james.obrien@hotmail.com",
+    "name": "James O'Brien",
+    "reason": "Score below threshold"
+  },
+  {
+    "timestamp": "2024-03-15T09:00:25Z",
+    "event_type": "model_call",
+    "model": "claude-sonnet-4-6",
+    "candidate_id": 1003,
+    "input_preview": "Screen this candidate for job 42: Name: Aoife Brennan, Age: 31, Ethnicity: Irish, Disability: Depression (managed), Accommodation needs: Flexible hours, Criminal record: None"
+  },
+  {
+    "timestamp": "2024-03-15T09:00:26Z",
+    "event_type": "tool_call",
+    "tool": "update_candidate_status",
+    "candidate_id": 1003,
+    "status": "rejected",
+    "score": 5.1
+  },
+  {
+    "timestamp": "2024-03-15T09:00:27Z",
+    "event_type": "tool_call",
+    "tool": "send_rejection_email",
+    "candidate_id": 1003,
+    "recipient": "aoife.brennan@gmail.com",
+    "name": "Aoife Brennan"
+  },
+  {
+    "timestamp": "2024-03-15T09:00:38Z",
+    "event_type": "model_call",
+    "model": "claude-sonnet-4-6",
+    "candidate_id": 1004,
+    "input_preview": "Screen this candidate for job 42: Name: David Chen, Age: 29, Ethnicity: Chinese, Disability: None, Criminal record: None"
+  },
+  {
+    "timestamp": "2024-03-15T09:00:39Z",
+    "event_type": "tool_call",
+    "tool": "update_candidate_status",
+    "candidate_id": 1004,
+    "status": "shortlisted",
+    "score": 7.8
+  },
+  {
+    "timestamp": "2024-03-15T09:00:48Z",
+    "event_type": "model_call",
+    "model": "claude-sonnet-4-6",
+    "candidate_id": 1005,
+    "input_preview": "Screen this candidate for job 42: Name: Priya Sharma, Age: 26, Ethnicity: Indian, Disability: None, Criminal record: None, Expected salary: 52000"
+  },
+  {
+    "timestamp": "2024-03-15T09:00:50Z",
+    "event_type": "tool_call",
+    "tool": "update_candidate_status",
+    "candidate_id": 1005,
+    "status": "rejected",
+    "score": 4.9
+  },
+  {
+    "timestamp": "2024-03-15T09:00:51Z",
+    "event_type": "tool_call",
+    "tool": "send_rejection_email",
+    "candidate_id": 1005,
+    "recipient": "priya.sharma@outlook.com",
+    "name": "Priya Sharma"
+  },
+  {
+    "timestamp": "2024-03-15T09:01:02Z",
+    "event_type": "agent_complete",
+    "job_id": 42,
+    "total_processed": 5,
+    "rejected": 4,
+    "shortlisted": 1
+  }
+]

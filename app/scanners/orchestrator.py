@@ -1,4 +1,7 @@
 from .base import ScannerFinding
+from .agent_config_scanner import AgentConfigScanner
+from .tool_permission_scanner import ToolPermissionScanner
+from .agent_action_log_scanner import AgentActionLogScanner
 from .secret_scanner import SecretRedactionScanner, redact_secrets
 from .data_scanner import PersonalDataScanner, SpecialCategoryScanner
 from .ai_scanner import AIUsageScanner, AutomatedDecisionScanner
@@ -131,6 +134,86 @@ def run_all_scanners(code: str, filename: str = "") -> dict:
             "has_special_category_data": has_special_category,
             "preliminary_risk_level": preliminary_risk,
         }
+    }
+
+
+def run_agent_scan(code: str, filename: str = "") -> dict:
+    """
+    Run the three agentic-AI scanners plus DataFlowScanner on agent code or log files.
+    Does NOT run secret redaction — callers are responsible for sanitising first.
+    Returns the same shape as run_all_scanners().
+    """
+    _AGENT_SCANNERS = [
+        AgentConfigScanner(),
+        ToolPermissionScanner(),
+        AgentActionLogScanner(),
+        DataFlowScanner(),
+    ]
+
+    all_findings: list[ScannerFinding] = []
+    for scanner in _AGENT_SCANNERS:
+        try:
+            findings = scanner.scan(code, filename)
+            all_findings.extend(findings)
+        except Exception as e:
+            all_findings.append(ScannerFinding(
+                scanner_name=scanner.name,
+                finding_type="scanner_error",
+                title=f"Scanner error: {scanner.name}",
+                description=f"Scanner encountered an error: {str(e)}",
+                confidence=0.0,
+                tags=["scanner_error"],
+            ))
+
+    has_automated = any(
+        f.finding_type in ("agent_no_human_approval", "agent_log_action_without_approval",
+                           "agent_log_bulk_automated_decisions")
+        for f in all_findings
+    )
+    has_special = any(
+        "GDPR_ART9" in (f.tags or []) or "special_category" in f.finding_type
+        for f in all_findings
+    )
+
+    if has_automated and has_special:
+        risk = "high"
+    elif has_automated or has_special or len(all_findings) >= 4:
+        risk = "high"
+    elif all_findings:
+        risk = "limited"
+    else:
+        risk = "minimal"
+
+    return {
+        "redacted_code": code,
+        "secrets_found": [],
+        "scanner_findings": [
+            {
+                "scanner_name": f.scanner_name,
+                "finding_type": f.finding_type,
+                "title": f.title,
+                "description": f.description,
+                "confidence": f.confidence,
+                "file_path": f.file_path,
+                "function_name": f.function_name,
+                "line_start": f.line_start,
+                "line_end": f.line_end,
+                "evidence_excerpt": f.evidence_excerpt,
+                "tags": f.tags,
+                "suggested_node_type": f.suggested_node_type,
+                "metadata": f.metadata,
+            }
+            for f in all_findings
+        ],
+        "summary": {
+            "total_scanner_findings": len(all_findings),
+            "personal_data_categories": [],
+            "ai_systems_detected": [],
+            "vendors_detected": [],
+            "has_automated_decisions": has_automated,
+            "has_special_category_data": has_special,
+            "preliminary_risk_level": risk,
+        },
     }
 
 
