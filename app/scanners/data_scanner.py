@@ -92,21 +92,37 @@ class SpecialCategoryScanner(BaseScanner):
                 for line_num, line_text in matches:
                     if category not in found_categories:
                         found_categories.add(category)
-                        findings.append(ScannerFinding(
-                            scanner_name=self.name,
-                            finding_type="special_category_data",
-                            title=f"GDPR Article 9 special category data: {category.replace('_', ' ').title()}",
-                            description=(
+                        # Criminal-offence data is governed by Art. 10, not Art. 9
+                        is_criminal = category == "criminal"
+                        if is_criminal:
+                            title = f"GDPR Article 10 criminal-offence data: {category.replace('_', ' ').title()}"
+                            description = (
+                                f"Code contains references to {category.replace('_', ' ')} data. "
+                                f"Criminal convictions and offence data are governed by GDPR Article 10 "
+                                f"(distinct from Art. 9 special categories). Processing is permitted only "
+                                f"under official authority or where Union or Member State law authorises it. "
+                                f"A DPIA is required before processing."
+                            )
+                            tags = ["special_category", "GDPR_ART10", "GDPR_ART35", category]
+                        else:
+                            title = f"GDPR Article 9 special category data: {category.replace('_', ' ').title()}"
+                            description = (
                                 f"Code contains references to {category.replace('_', ' ')} data — "
                                 f"a special category under GDPR Article 9. Processing is prohibited "
                                 f"unless a specific exception under Art. 9(2) applies. "
                                 f"A DPIA is likely required before processing."
-                            ),
+                            )
+                            tags = ["special_category", "GDPR_ART9", "GDPR_ART35", category]
+                        findings.append(ScannerFinding(
+                            scanner_name=self.name,
+                            finding_type="special_category_data",
+                            title=title,
+                            description=description,
                             confidence=0.9,
                             file_path=filename,
                             line_start=line_num,
                             evidence_excerpt=self._excerpt(line_text),
-                            tags=["special_category", "GDPR_ART9", "GDPR_ART35", category],
+                            tags=tags,
                             suggested_node_type="data_element",
                             metadata={"special_category": category}
                         ))

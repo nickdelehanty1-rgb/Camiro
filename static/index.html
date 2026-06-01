@@ -1669,6 +1669,42 @@ function _downloadDemoPDF() {
   });
   y += 4;
 
+  // Evidence gap matrix
+  h2('Evidence gap matrix');
+  const matrixRows = [
+    ['AI-assisted processing',   'MISSING FROM NOTICE',     'Privacy/legal review'],
+    ['Automated decisions',      'MISSING FROM NOTICE',     'Art. 22 review'],
+    ['Special-category data',    'MISSING EVIDENCE',        'Art. 9/10 review'],
+    ['Sensitive data in logs',   'CONTROLS NOT EVIDENCED',  'Security review'],
+    ['Vendor safeguards',        'CONTROLS NOT EVIDENCED',  'DPA/transfer review'],
+    ['AI Act high-risk',         'REQUIRES REVIEW',         'AI governance review'],
+    ['Human oversight',          'REQUIRES REVIEW',         'Add oversight procedure'],
+  ];
+  // Header row
+  if (y + 8 > 270) { doc.addPage(); y = 20; }
+  doc.setFillColor(27, 67, 50);
+  doc.rect(M, y, CW, 7, 'F');
+  doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(183, 228, 199);
+  doc.text('REVIEW AREA', M + 3, y + 5);
+  doc.text('STATUS', M + CW * 0.42, y + 5);
+  doc.text('HUMAN ACTION', M + CW * 0.72, y + 5);
+  y += 7;
+  // Data rows
+  matrixRows.forEach(([area, status, action], idx) => {
+    if (y + 7 > 272) { doc.addPage(); y = 20; }
+    doc.setFillColor(idx % 2 === 0 ? 248 : 255, idx % 2 === 0 ? 249 : 255, idx % 2 === 0 ? 246 : 255);
+    doc.setDrawColor(232, 228, 221);
+    doc.rect(M, y, CW, 7, 'FD');
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(27, 67, 50);
+    doc.text(area, M + 3, y + 5);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(146, 64, 14);
+    doc.text(status, M + CW * 0.42, y + 5);
+    doc.setTextColor(107, 114, 128);
+    doc.text(action, M + CW * 0.72, y + 5);
+    y += 7;
+  });
+  y += 6;
+
   // Missing evidence
   h2('Missing evidence requested by Camiro');
   ['Updated candidate privacy notice — must disclose AI, automated decisions, Art. 9 data, and processors',
@@ -1829,10 +1865,10 @@ const _AGENT_CARDS = [
   {
     badge: 'no_audit_trail',
     articles: 'AI Act Art. 12 &middot; GDPR Art. 5',
-    cardTitle: '18 agent actions logged, zero human oversight entries',
-    techReality: 'Full action log reviewed. No human_review, human_approval, or override events found.',
+    cardTitle: 'Action log lacks human approval events',
+    techReality: 'Full action log reviewed. No human_review, human_approval, or override events found across 18 entries.',
     codeRef: 'agent_action_log.json (18 events)',
-    govEvidence: 'No audit trail governance policy detected. Log does not evidence human oversight.',
+    govEvidence: 'No audit trail governance policy detected. Log does not evidence human oversight at any decision point.',
     agentConclusion: 'AI Act Art. 12 logging and accountability review required',
     pct: 82,
   },
