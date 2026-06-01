@@ -322,6 +322,13 @@ textarea::placeholder{color:var(--light)}
       </div>
       <button class="demo-btn" id="demoBtnMain" onclick="runDemo()">Run AcmeHire EU AI/GDPR Evidence Agent Review &rarr;</button>
     </div>
+    <div class="demo-cta" style="margin-top:8px">
+      <div class="demo-cta-info">
+        <div class="demo-cta-title">AcmeHire Agent Review</div>
+        <div class="demo-cta-sub">See Camiro scan an autonomous HR agent — its config, tool permissions, and action logs against GDPR Art. 22 and AI Act Art. 14 oversight requirements.</div>
+      </div>
+      <button class="demo-btn" id="demoBtnAgent" onclick="runAgentDemo()">Run AcmeHire Agent Review &rarr;</button>
+    </div>
     <div class="input-card">
       <div class="input-tabs">
         <button class="tab-btn active" onclick="switchTab('paste')">Paste code</button>
@@ -426,6 +433,27 @@ def score_candidate(user_id, cv_text, age, gender):
       <div class="step-item" id="step-5"><span class="step-icon">&middot;</span><span>Claims compared against code reality — privacy notice does not disclose AI-assisted screening</span></div>
       <div class="step-item" id="step-6"><span class="step-icon">&middot;</span><span>Obligations mapped — GDPR Art. 13&ndash;14, Art. 9/10, Art. 22, Art. 28/44, AI Act review</span></div>
       <div class="step-item" id="step-7"><span class="step-icon">&middot;</span><span>Evidence pack generated — human review required</span></div>
+    </div>
+  </div>
+
+  <div id="agentLoadingView" class="loading hidden">
+    <div class="loading-tree">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <ellipse cx="26" cy="17" rx="15" ry="11" fill="#B7E4C7"/>
+        <ellipse cx="16" cy="25" rx="10" ry="7.5" fill="#B7E4C7"/>
+        <ellipse cx="36" cy="25" rx="10" ry="7.5" fill="#B7E4C7"/>
+        <rect x="23.5" y="33" width="5" height="10" rx="2.5" fill="#52B788"/>
+      </svg>
+    </div>
+    <div class="loading-text">Scanning AcmeHire HR agent&hellip;</div>
+    <div class="loading-sub">Reviewing tool permissions, action logs, and oversight controls</div>
+    <div class="step-list">
+      <div class="step-item" id="astep-0"><span class="step-icon">&middot;</span><span>Agent framework detected &mdash; Anthropic tool use</span></div>
+      <div class="step-item" id="astep-1"><span class="step-icon">&middot;</span><span>Tool inventory built &mdash; get_candidate, send_rejection_email, update_status</span></div>
+      <div class="step-item" id="astep-2"><span class="step-icon">&middot;</span><span>Permission gaps checked &mdash; no human approval gate detected</span></div>
+      <div class="step-item" id="astep-3"><span class="step-icon">&middot;</span><span>Action log analysed &mdash; 18 events, 0 human oversight entries</span></div>
+      <div class="step-item" id="astep-4"><span class="step-icon">&middot;</span><span>Bulk decisions detected &mdash; 3 consequential actions in 2 seconds</span></div>
+      <div class="step-item" id="astep-5"><span class="step-icon">&middot;</span><span>Evidence gaps mapped to GDPR / AI Act obligations</span></div>
     </div>
   </div>
 
@@ -666,6 +694,50 @@ def score_candidate(user_id, cv_text, age, gender):
     </div>
 
     <button class="scan-again" onclick="resetDemo()">&larr; Back to scanner</button>
+  </div>
+
+  <!-- Agent demo results view -->
+  <div id="agentResultsView" class="results hidden">
+
+    <div class="demo-verdict">
+      <div class="demo-verdict-left">
+        <div class="demo-verdict-headline">AcmeHire agent review complete.</div>
+        <div class="demo-verdict-sub">Camiro found critical gaps between what this agent can do and what governance documents permit.</div>
+      </div>
+      <button class="pdf-btn" onclick="downloadPDF()">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2"/></svg>
+        Download Agent Evidence Pack
+      </button>
+    </div>
+
+    <div class="review-objective">
+      <div class="review-objective-lbl">Review objective</div>
+      Assess AcmeHire HR agent for GDPR and EU AI Act evidence gaps — tool permissions, action logs, and oversight controls.
+    </div>
+
+    <div class="agent-timeline">
+      <div class="agent-timeline-hdr">Agent actions completed</div>
+      <div class="agent-step"><span class="agent-step-ck">&#10003;</span><div><div class="agent-step-txt">Agent framework detected</div><div class="agent-step-sub">Anthropic tool use — autonomous agentic loop with no interrupt points</div></div></div>
+      <div class="agent-step"><span class="agent-step-ck">&#10003;</span><div><div class="agent-step-txt">Tool inventory built</div><div class="agent-step-sub">get_candidate, send_rejection_email, update_candidate_status, log_decision — all with data access or consequential action</div></div></div>
+      <div class="agent-step"><span class="agent-step-ck">&#10003;</span><div><div class="agent-step-txt">Permission gaps checked</div><div class="agent-step-sub">No human_approval, hitl, or checkpoint pattern detected in agent config or dispatch loop</div></div></div>
+      <div class="agent-step"><span class="agent-step-ck">&#10003;</span><div><div class="agent-step-txt">Action log analysed</div><div class="agent-step-sub">18 events reviewed — 0 human oversight entries, 4 rejection emails sent, special-category data in 5 entries</div></div></div>
+      <div class="agent-step"><span class="agent-step-ck">&#10003;</span><div><div class="agent-step-txt">Bulk decisions detected</div><div class="agent-step-sub">3 consequential actions in under 2 seconds with no human events between them</div></div></div>
+      <div class="agent-step"><span class="agent-step-ck">&#10003;</span><div><div class="agent-step-txt">Evidence gaps mapped</div><div class="agent-step-sub">GDPR Art. 22, Art. 9/10, Art. 5 &middot; AI Act Art. 12, Art. 14/26 review required</div></div></div>
+    </div>
+
+    <div class="gap-section-label" style="margin-bottom:8px">Agent evidence gaps</div>
+    <div id="agentGapCards"></div>
+
+    <div style="margin-top:16px;padding:12px 14px;background:var(--sand);border-radius:8px;font-size:11.5px;color:var(--light);line-height:1.5">
+      This report does not constitute legal advice and does not assess compliance or legal status. All findings require review by qualified legal, privacy, and technical professionals.
+    </div>
+
+    <div style="margin-top:10px;font-size:11px;color:var(--light)">
+      Generated by Camiro &middot; AcmeHire Agent Review &middot; <span id="agentDemoDate"></span>
+      &middot; Evidence sources: acmehire_agent/agent.py, agent_action_log.json
+    </div>
+
+    <button class="scan-again" onclick="resetAgentDemo()">&larr; Back to scanner</button>
   </div>
 
 </main>
@@ -1268,12 +1340,17 @@ async function runDemo() {
 }
 
 const _BADGE = {
-  missing_evidence:      { cls: 'badge-missing',       label: 'MISSING FROM NOTICE'    },
-  missing_doc_evidence:  { cls: 'badge-missing',       label: 'MISSING EVIDENCE'        },
-  controls_not_evidenced:{ cls: 'badge-controls',      label: 'CONTROLS NOT EVIDENCED' },
-  contradiction:         { cls: 'badge-contradiction',  label: 'CONTRADICTION'          },
-  requires_review:       { cls: 'badge-review',         label: 'REQUIRES REVIEW'        },
-  observed:              { cls: 'badge-observed',        label: 'OBSERVED IN CODE'       },
+  missing_evidence:        { cls: 'badge-missing',       label: 'MISSING FROM NOTICE'       },
+  missing_doc_evidence:    { cls: 'badge-missing',       label: 'MISSING EVIDENCE'           },
+  controls_not_evidenced:  { cls: 'badge-controls',      label: 'CONTROLS NOT EVIDENCED'    },
+  contradiction:           { cls: 'badge-contradiction',  label: 'CONTRADICTION'             },
+  requires_review:         { cls: 'badge-review',         label: 'REQUIRES REVIEW'           },
+  observed:                { cls: 'badge-observed',        label: 'OBSERVED IN CODE'          },
+  // Agent-specific badges
+  no_human_gate:           { cls: 'badge-contradiction',  label: 'NO HUMAN APPROVAL GATE'   },
+  special_category_exposed:{ cls: 'badge-contradiction',  label: 'SPECIAL CATEGORY EXPOSED' },
+  bulk_decisions:          { cls: 'badge-contradiction',  label: 'BULK AUTOMATED DECISIONS' },
+  no_audit_trail:          { cls: 'badge-review',         label: 'NO AUDIT TRAIL'            },
 };
 
 function _buildGapCards(codeResult, docResult) {
@@ -1642,6 +1719,181 @@ function resetDemo() {
   document.getElementById('demoResultsView').classList.add('hidden');
   document.getElementById('inputView').classList.remove('hidden');
   const btn = document.getElementById('demoBtnMain');
+  if (btn) btn.disabled = false;
+  currentData = null;
+}
+
+// ── Agent demo flow ────────────────────────────────────────────────────────────
+
+const _AGENT_STEP_DELAYS = [500, 600, 650, 700, 700, 600];
+const _N_AGENT_STEPS = 6;
+
+function _animateAgentSteps() {
+  return new Promise(resolve => {
+    let i = 0;
+    function tick() {
+      if (i > 0) {
+        const prev = document.getElementById('astep-' + (i - 1));
+        if (prev) {
+          prev.classList.remove('active');
+          prev.classList.add('done');
+          prev.querySelector('.step-icon').textContent = '✓';
+        }
+      }
+      if (i < _N_AGENT_STEPS) {
+        const curr = document.getElementById('astep-' + i);
+        if (curr) {
+          curr.classList.add('active');
+          curr.querySelector('.step-icon').innerHTML = '<div class="step-spinner"></div>';
+        }
+        i++;
+        setTimeout(tick, _AGENT_STEP_DELAYS[i - 1] || 600);
+      } else {
+        setTimeout(resolve, 300);
+      }
+    }
+    tick();
+  });
+}
+
+async function runAgentDemo() {
+  const btn = document.getElementById('demoBtnAgent');
+  if (btn) btn.disabled = true;
+
+  for (let i = 0; i < _N_AGENT_STEPS; i++) {
+    const el = document.getElementById('astep-' + i);
+    if (el) { el.className = 'step-item'; el.querySelector('.step-icon').textContent = '·'; }
+  }
+
+  document.getElementById('inputView').classList.add('hidden');
+  document.getElementById('agentLoadingView').classList.remove('hidden');
+
+  const animPromise = _animateAgentSteps();
+
+  try {
+    const [agentRes] = await Promise.all([
+      fetch('/samples/acmehire-agent').then(r => r.json()),
+    ]);
+
+    const codeResult = await fetch('/analyse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: agentRes.code, filename: agentRes.filename }),
+    }).then(r => r.json());
+    if (codeResult.detail) throw new Error(codeResult.detail);
+
+    await animPromise;
+    document.getElementById('agentLoadingView').classList.add('hidden');
+    _renderAgentDemo(codeResult);
+
+  } catch (e) {
+    await animPromise;
+    document.getElementById('agentLoadingView').classList.add('hidden');
+    document.getElementById('inputView').classList.remove('hidden');
+    if (btn) btn.disabled = false;
+    alert('Agent demo error: ' + e.message + '\n\nMake sure the server is running with a valid API key.');
+  }
+}
+
+const _AGENT_CARDS = [
+  {
+    badge: 'no_human_gate',
+    articles: 'AI Act Art. 14/26 &middot; GDPR Art. 22',
+    cardTitle: 'Agent sends rejection emails without human review',
+    techReality: 'send_rejection_email tool invoked automatically after scoring. No human_approval event in 18 log entries.',
+    codeRef: 'acmehire_agent/agent.py:65 &middot; agent_action_log.json',
+    govEvidence: 'No human approval gate configured in agent definition. No override or checkpoint detected in dispatch loop.',
+    agentConclusion: 'GDPR Art. 22 and AI Act Art. 14 human oversight review required before deployment',
+    pct: 88,
+  },
+  {
+    badge: 'special_category_exposed',
+    articles: 'GDPR Art. 9 &middot; Art. 10',
+    cardTitle: 'Ethnicity, disability and criminal record appear in agent logs',
+    techReality: 'Special-category fields detected in 5 log entries. No redaction before logging.',
+    codeRef: 'agent_action_log.json — entries 2, 6, 10, 12, 14',
+    govEvidence: 'No data minimisation or redaction controls detected in agent config or logging setup.',
+    agentConclusion: 'Art. 9 special-category and Art. 10 criminal-offence protections required',
+    pct: 85,
+  },
+  {
+    badge: 'bulk_decisions',
+    articles: 'GDPR Art. 22 &middot; AI Act Art. 14',
+    cardTitle: '3 consequential decisions in 2 seconds — no human oversight',
+    techReality: 'Rejection emails and status updates fired in rapid succession. Average human review time: 0 seconds.',
+    codeRef: 'agent_action_log.json — 09:00:00&ndash;09:00:02',
+    govEvidence: 'No rate limiting, batching controls, or mandatory review intervals configured.',
+    agentConclusion: 'Bulk automated decision review required — individual review per GDPR Art. 22',
+    pct: 88,
+  },
+  {
+    badge: 'no_audit_trail',
+    articles: 'AI Act Art. 12 &middot; GDPR Art. 5',
+    cardTitle: '18 agent actions logged, zero human oversight entries',
+    techReality: 'Full action log reviewed. No human_review, human_approval, or override events found.',
+    codeRef: 'agent_action_log.json (18 events)',
+    govEvidence: 'No audit trail governance policy detected. Log does not evidence human oversight.',
+    agentConclusion: 'AI Act Art. 12 logging and accountability review required',
+    pct: 82,
+  },
+];
+
+function _renderAgentCard(c) {
+  const badge = _BADGE[c.badge] || _BADGE.requires_review;
+  return `<div class="gap-card">
+    <div class="gap-card-head">
+      <span class="badge ${badge.cls}">${badge.label}</span>
+      <span class="gap-article-tag">${c.articles}</span>
+    </div>
+    <div class="gap-card-title-row">
+      <div class="gap-card-title-main">${c.cardTitle}</div>
+    </div>
+    <div class="gap-card-2col">
+      <div class="gap-col">
+        <div class="gap-col-lbl">Technical reality</div>
+        <div class="gap-ev-detail">${c.techReality}</div>
+        <div class="gap-file-ref">${c.codeRef}</div>
+      </div>
+      <div class="gap-col" style="border-right:none">
+        <div class="gap-col-lbl">Governance evidence</div>
+        <div class="gap-absent">Not evidenced</div>
+        <div class="gap-ev-detail">${c.govEvidence}</div>
+      </div>
+    </div>
+    <div class="gap-conclusion-bar">
+      <span class="gap-conclusion-lbl">Agent conclusion:</span> ${c.agentConclusion}
+    </div>
+    <div class="gap-card-footer">
+      <div>
+        <div class="gap-col-lbl" style="margin-bottom:4px">Evidence confidence</div>
+        <div class="conf-bar-wrap" style="width:120px"><div class="conf-bar" style="width:${c.pct}%"></div></div>
+        <span style="font-size:11px;color:var(--muted)">${c.pct}%</span>
+      </div>
+      <div style="font-size:11px;color:var(--light)">Human review required</div>
+    </div>
+  </div>`;
+}
+
+function _renderAgentDemo(codeResult) {
+  document.getElementById('agentGapCards').innerHTML = _AGENT_CARDS.map(_renderAgentCard).join('');
+
+  document.getElementById('agentDemoDate').textContent = new Date().toLocaleDateString(
+    'en-IE', { day: 'numeric', month: 'long', year: 'numeric' }
+  );
+
+  currentData = Object.assign({}, codeResult, {
+    _filename: 'AcmeHire_Agent_Review',
+    _isDemo: true,
+    _date: new Date().toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' }),
+  });
+
+  document.getElementById('agentResultsView').classList.remove('hidden');
+}
+
+function resetAgentDemo() {
+  document.getElementById('agentResultsView').classList.add('hidden');
+  document.getElementById('inputView').classList.remove('hidden');
+  const btn = document.getElementById('demoBtnAgent');
   if (btn) btn.disabled = false;
   currentData = null;
 }
