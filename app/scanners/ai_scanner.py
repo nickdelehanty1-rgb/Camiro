@@ -120,6 +120,36 @@ AI_PROVIDER_PATTERNS = {
     ],
 }
 
+# Code-structure signals for AI Act Annex III high-risk domains.
+# These patterns match identifiers, SQL, class/function definitions, and URL paths —
+# NOT plain words in string literals or comments.
+# An AI system is only classified as high-risk in a domain when BOTH an AI model
+# AND at least one of these code-structure patterns are present.
+_HR_DOMAIN_CODE_SIGNALS: list[str] = [
+    # Employment / worker management (Annex III §4)
+    r'\bcandidate[_\.](id|name|score|status|email|data|rank)\b',
+    r'\bapplicant[_\.](id|name|score|status|data)\b',
+    r'class\s+\w*(Candidate|Applicant|Hiring|Recruitment|Interview)\b',
+    r'def\s+\w*(candidate|applicant|screen_|hire_|recruit)\w*\s*\(',
+    r'(?:FROM|JOIN|UPDATE|INSERT\s+INTO)\s+\w*(?:candidates|applicants|applications|jobs)\b',
+    r'[\'"/](?:candidates?|applicants?|applications?|recruitment|job_seekers)[\'"/]',
+    # Credit / financial services (Annex III §5b)
+    r'\bcredit[_\.](?:score|risk|limit|decision)\b',
+    r'\bloan[_\.](?:application|approval|decision|assessment)\b',
+    r'class\s+\w*(Credit|Loan|Insurance|Underwriting)\b',
+    r'def\s+\w*(credit_score|loan_decision|underwrite|assess_credit)\w*\s*\(',
+    # Healthcare / medical (Annex III §5a)
+    r'\bpatient[_\.](?:id|name|data|record|diagnosis)\b',
+    r'\b(?:diagnosis|diagnostic)_\w+\b',
+    r'class\s+\w*(Patient|Medical|Clinical|Diagnosis)\b',
+    r'(?:FROM|UPDATE)\s+\w*(?:patients|medical_records|diagnoses)\b',
+    # Education / student assessment (Annex III §3)
+    r'\bstudent[_\.](?:id|name|score|grade|data)\b',
+    r'\b(?:student_assessment|academic_score|enrollment_decision)\b',
+    r'class\s+\w*(Student|Academic|Enrollment)\b',
+]
+
+
 # Automated decision-making patterns
 AUTOMATED_DECISION_PATTERNS = [
     (r'\b(auto_reject|auto_approve|auto_decline|auto_accept)\b', "Automated approval/rejection function", "critical"),
@@ -180,6 +210,38 @@ class AIUsageScanner(BaseScanner):
                         suggested_node_type="ai_system",
                         metadata={"provider": provider}
                     ))
+
+        # Domain-clarity check: if an AI system was detected, determine whether
+        # code-structure signals confirm a high-risk Annex III domain.
+        # Signals must appear in identifiers, SQL, class/function definitions, or
+        # URL paths — NOT in string literals or guardrail instructions.
+        if detected_providers:
+            has_domain_signal = any(
+                re.search(p, code, re.IGNORECASE)
+                for p in _HR_DOMAIN_CODE_SIGNALS
+            )
+            if not has_domain_signal:
+                findings.append(ScannerFinding(
+                    scanner_name=self.name,
+                    finding_type="ai_domain_unclear",
+                    title="AI system detected — domain context requires review",
+                    description=(
+                        "AI system detected. Domain context unclear — high-risk AI Act "
+                        "classification requires legal review. Current evidence does not "
+                        "confirm employment, credit, health, or education context from "
+                        "code structure alone. If this system is used in an Annex III "
+                        "context (employment, credit, healthcare, education), high-risk "
+                        "classification obligations apply. Human legal review required."
+                    ),
+                    confidence=0.75,
+                    file_path=filename,
+                    tags=["ai_system", "AI_ACT_ART6_HIGH_RISK", "requires_review"],
+                    suggested_node_type="ai_system",
+                    metadata={
+                        "domain_confirmed": False,
+                        "detected_providers": list(detected_providers.keys()),
+                    },
+                ))
 
         return findings
 

@@ -56,13 +56,56 @@ class PersonalDataScanner(BaseScanner):
 
     def scan(self, code: str, filename: str = "") -> list[ScannerFinding]:
         findings = []
-        found_categories = set()
+        found_categories: set[str] = set()    # confirmed_field / personal_data_detected
+        found_keyword_refs: set[str] = set()  # keyword_reference (guardrail/string context)
 
         for category, patterns in PERSONAL_DATA_PATTERNS.items():
             for pattern_str in patterns:
                 pattern = re.compile(pattern_str, re.IGNORECASE)
                 matches = self._find_lines_matching(code, pattern)
                 for line_num, line_text in matches:
+                    # Confidence-tier check: is this term in a prohibition/guardrail context?
+                    m = pattern.search(line_text)
+                    match_pos = m.start() if m else 0
+                    window = line_text[max(0, match_pos - 80):min(len(line_text), match_pos + 80)]
+                    in_guardrail = bool(_GUARDRAIL_RE.search(window))
+
+                    if in_guardrail:
+                        # Low-confidence keyword reference — do NOT count as confirmed processing.
+                        # The orchestrator only includes "personal_data_detected" findings in
+                        # personal_data_categories, so this is intentionally excluded from the
+                        # LLM context summary.
+                        if category not in found_keyword_refs:
+                            found_keyword_refs.add(category)
+                            findings.append(ScannerFinding(
+                                scanner_name=self.name,
+                                finding_type="keyword_reference",
+                                title=(
+                                    f"Keyword reference to {category.replace('_', ' ')} "
+                                    f"in guardrail/instruction context"
+                                ),
+                                description=(
+                                    f"The term '{category.replace('_', ' ')}' was found in a "
+                                    f"prohibition or instruction context (e.g. 'do not use', "
+                                    f"'avoid', 'excluded'). This is likely a prompt guardrail "
+                                    f"or policy instruction. It does not confirm that the system "
+                                    f"processes {category.replace('_', ' ')} data. Verify in "
+                                    f"code structure before flagging as a data category."
+                                ),
+                                confidence=0.35,
+                                file_path=filename,
+                                line_start=line_num,
+                                evidence_excerpt=self._excerpt(line_text),
+                                tags=["keyword_reference", "requires_review", category],
+                                suggested_node_type="data_element",
+                                metadata={
+                                    "data_category": category,
+                                    "confidence_tier": "guardrail_reference",
+                                }
+                            ))
+                        continue  # Keep scanning for a confirmed_field match
+
+                    # High-confidence confirmed field — variable, query, or assignment context
                     if category not in found_categories:
                         found_categories.add(category)
                         findings.append(ScannerFinding(
@@ -80,9 +123,12 @@ class PersonalDataScanner(BaseScanner):
                             evidence_excerpt=self._excerpt(line_text),
                             tags=["personal_data", "GDPR_ART5", "GDPR_ART6", category],
                             suggested_node_type="data_element",
-                            metadata={"data_category": category}
+                            metadata={
+                                "data_category": category,
+                                "confidence_tier": "confirmed_field",
+                            }
                         ))
-                    break
+                    break  # Found a definitive code-context match; stop for this category
 
         return findings
 

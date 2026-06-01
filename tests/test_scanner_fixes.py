@@ -1,6 +1,6 @@
 """
-Tests for AIUsageScanner generic-AI expansion and SpecialCategoryScanner
-guardrail detection.
+Tests for AIUsageScanner generic-AI expansion, SpecialCategoryScanner
+guardrail detection, and high-risk domain classification.
 Run standalone: python3 tests/test_scanner_fixes.py
 """
 import sys
@@ -8,7 +8,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.scanners.ai_scanner import AIUsageScanner
-from app.scanners.data_scanner import SpecialCategoryScanner
+from app.scanners.data_scanner import SpecialCategoryScanner, PersonalDataScanner
 
 PASS = "\033[92mPASS\033[0m"
 FAIL = "\033[91mFAIL\033[0m"
@@ -131,10 +131,41 @@ instructions = "Evaluate candidates without regard to disability or health statu
 """
 
 
+# Dating app: has LLM but employment/income only in guardrail string
+DATING_APP_GUARDRAIL = """
+class MatchRecommendationService:
+    def get_matches(self, user_id):
+        # Use LLM to find compatible profiles
+        result = self.llm.complete(
+            prompt=f"Find matches for user {user_id}",
+            temperature=0.7,
+            max_tokens=500,
+            system_message="You are a dating compatibility engine. " +
+                           "Do not rank by income, employment status, " +
+                           "race, religion, or disability.",
+        )
+        return {"compatibilityScore": result.get("score")}
+"""
+
+# AcmeHire with candidate fields in code structure — should confirm employment domain
+ACMEHIRE_DOMAIN = """
+import openai
+
+def score_candidate(candidate_id: int):
+    candidate = db.query("SELECT candidate_id, name FROM candidates WHERE id = %s", [candidate_id])
+    result = openai.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": f"Score: {candidate['cv_text']}"}]
+    )
+    return {"candidate_score": float(result.choices[0].message.content)}
+"""
+
+
 if __name__ == "__main__":
     results = []
     ai = AIUsageScanner()
     sc = SpecialCategoryScanner()
+    pd = PersonalDataScanner()
 
     print("─── AIUsageScanner: generic AI patterns ─────────────────────")
 
@@ -218,6 +249,42 @@ if __name__ == "__main__":
         forbidden_types=["special_category_data"],
     ))
 
+    print("─── High-risk domain classification ────────────────────────")
+
+    # Dating app: employment/income only in guardrail string → domain unclear, NOT employment AI
+    dating_ai = ai.scan(DATING_APP_GUARDRAIL, "dating_app.py")
+    results.append(check(
+        "i) Dating app — AI detected but employment only in guardrail → ai_domain_unclear, NOT employment domain",
+        dating_ai,
+        expect_fire=True,
+        required_types=["ai_domain_unclear"],
+    ))
+    # Also verify PersonalDataScanner: "employment" in guardrail → keyword_reference, NOT personal_data_detected
+    dating_pd = pd.scan(DATING_APP_GUARDRAIL, "dating_app.py")
+    employment_confirmed = [f for f in dating_pd if f.finding_type == "personal_data_detected"
+                            and "employment" in f.metadata.get("data_category", "")]
+    employment_guardrail = [f for f in dating_pd if f.finding_type == "keyword_reference"
+                            and "employment" in f.metadata.get("data_category", "")]
+    results.append(check(
+        "j) Dating app PersonalDataScanner — 'employment' in guardrail → keyword_reference (0.35), NOT personal_data_detected",
+        [f for f in dating_pd if "employment" in f.metadata.get("data_category", "")],
+        expect_fire=True,
+        required_types=["keyword_reference"],
+        forbidden_types=["personal_data_detected"],
+    ))
+
+    # AcmeHire: candidate.score, FROM candidates → domain confirmed, NO ai_domain_unclear
+    acmehire_ai = ai.scan(ACMEHIRE_DOMAIN, "acmehire.py")
+    domain_unclear = [f for f in acmehire_ai if f.finding_type == "ai_domain_unclear"]
+    results.append(check(
+        "k) AcmeHire — code has candidate_ fields and FROM candidates → NO ai_domain_unclear",
+        acmehire_ai,
+        expect_fire=True,
+        forbidden_types=["ai_domain_unclear"],
+    ))
+    print(f"       ai_domain_unclear findings: {len(domain_unclear)} (expected 0)")
+    print()
+
     print("─── Existing tests still pass ───────────────────────────────")
     # Run existing test suites
     import subprocess
@@ -241,5 +308,17 @@ if __name__ == "__main__":
     passed = sum(results)
     total = len(results)
     print(f"\nNew tests: {passed}/{total} passed")
+    print()
+    # Before/after summary
+    print("─── Before/after summary: dating app sample ──────────────────")
+    print("BEFORE fix: employment term in guardrail → personal_data_detected (0.85)")
+    print("            → LLM context includes employment_data → classified as employment AI")
+    print()
+    print("AFTER  fix:")
+    dating_all = pd.scan(DATING_APP_GUARDRAIL, "dating_app.py") + ai.scan(DATING_APP_GUARDRAIL, "dating_app.py")
+    for f in dating_all:
+        tier = f.metadata.get("confidence_tier", "")
+        tier_str = f" [{tier}]" if tier else ""
+        print(f"  [{f.finding_type}] [{f.confidence:.2f}]{tier_str} {f.title}")
     if passed < total:
         sys.exit(1)
