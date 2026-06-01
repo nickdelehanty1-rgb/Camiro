@@ -131,6 +131,44 @@ instructions = "Evaluate candidates without regard to disability or health statu
 """
 
 
+# ─── Domain classification test samples ──────────────────────────────────────
+
+# Rental screening app — processes employment DATA (income, job) for a HOUSING decision
+RENTAL_APP = """
+class TenantScreeningService:
+    def screen_tenant(self, tenant_id: int) -> dict:
+        tenant = db.query("SELECT * FROM tenants WHERE id = %s", [tenant_id])
+        # Income and employment are INPUT data, not the decision domain
+        income = tenant["monthly_income"]
+        employment_status = tenant["job_type"]
+        rental_history = tenant["previous_tenancies"]
+
+        result = self.llm.complete(
+            prompt=f"Assess rental application: income={income}, employment={employment_status}",
+            system_message="You are a rental screening assistant.",
+            temperature=0.0,
+        )
+        return {"rental_score": result["score"], "rental_approved": result["decision"]}
+
+    def batch_screen(self, property_id: int):
+        tenants = db.query("SELECT * FROM tenants WHERE property_id = %s", [property_id])
+        return [self.screen_tenant(t["id"]) for t in tenants]
+"""
+
+# Multi-domain: both credit and healthcare signals
+MULTI_DOMAIN_APP = """
+class CreditHealthAssessment:
+    def assess_patient_loan(self, patient_id: int, loan_application_id: int):
+        patient_data = db.query("SELECT * FROM patients WHERE id = %s", [patient_id])
+        loan_data = db.query("SELECT * FROM loan_applications WHERE id = %s", [loan_application_id])
+
+        result = self.llm.complete(
+            prompt=f"Assess: diagnosis={patient_data['diagnosis_code']}, debt_to_income={loan_data['debt_ratio']}",
+            max_tokens=256,
+        )
+        return {"loan_approved": result["credit_decision"], "treatment_recommendation": result["health_outcome"]}
+"""
+
 # Dating app: has LLM but employment/income only in guardrail string
 DATING_APP_GUARDRAIL = """
 class MatchRecommendationService:
@@ -254,17 +292,14 @@ if __name__ == "__main__":
     # Dating app: employment/income only in guardrail string → domain unclear, NOT employment AI
     dating_ai = ai.scan(DATING_APP_GUARDRAIL, "dating_app.py")
     results.append(check(
-        "i) Dating app — AI detected but employment only in guardrail → ai_domain_unclear, NOT employment domain",
+        "i) Dating app — AI + employment only in guardrail → ai_domain_unclear, NOT employment domain",
         dating_ai,
         expect_fire=True,
         required_types=["ai_domain_unclear"],
+        forbidden_types=["ai_domain_confirmed"],
     ))
     # Also verify PersonalDataScanner: "employment" in guardrail → keyword_reference, NOT personal_data_detected
     dating_pd = pd.scan(DATING_APP_GUARDRAIL, "dating_app.py")
-    employment_confirmed = [f for f in dating_pd if f.finding_type == "personal_data_detected"
-                            and "employment" in f.metadata.get("data_category", "")]
-    employment_guardrail = [f for f in dating_pd if f.finding_type == "keyword_reference"
-                            and "employment" in f.metadata.get("data_category", "")]
     results.append(check(
         "j) Dating app PersonalDataScanner — 'employment' in guardrail → keyword_reference (0.35), NOT personal_data_detected",
         [f for f in dating_pd if "employment" in f.metadata.get("data_category", "")],
@@ -273,7 +308,7 @@ if __name__ == "__main__":
         forbidden_types=["personal_data_detected"],
     ))
 
-    # AcmeHire: candidate.score, FROM candidates → domain confirmed, NO ai_domain_unclear
+    # AcmeHire: candidate.score, FROM candidates → domain confirmed employment, NO ai_domain_unclear
     acmehire_ai = ai.scan(ACMEHIRE_DOMAIN, "acmehire.py")
     domain_unclear = [f for f in acmehire_ai if f.finding_type == "ai_domain_unclear"]
     results.append(check(
@@ -283,6 +318,60 @@ if __name__ == "__main__":
         forbidden_types=["ai_domain_unclear"],
     ))
     print(f"       ai_domain_unclear findings: {len(domain_unclear)} (expected 0)")
+    print()
+
+    print("─── DomainContextClassifier tests ───────────────────────────")
+
+    # a) Rental app: has housing purpose signals + employment DATA → should classify as HOUSING only
+    rental_ai = ai.scan(RENTAL_APP, "rental.py")
+    rental_domain = [f for f in rental_ai if f.finding_type in ("ai_domain_confirmed", "ai_domain_multiple", "ai_domain_unclear")]
+    rental_employment = [f for f in rental_domain if "employment" in str(f.metadata.get("matched_domains", []))]
+    rental_housing = [f for f in rental_domain
+                      if f.finding_type == "ai_domain_confirmed"
+                      and "housing" in str(f.metadata.get("matched_domains", []))]
+    results.append(check(
+        "l) Rental app — TenantScreeningService + FROM tenants → housing domain confirmed, NOT employment",
+        rental_domain,
+        expect_fire=True,
+        required_types=["ai_domain_confirmed"],
+        forbidden_types=["ai_domain_multiple"],
+    ))
+    domain_found = rental_domain[0].metadata.get("matched_domains", []) if rental_domain else []
+    print(f"       Domain detected: {domain_found} (expected: ['housing/property'])")
+    print()
+
+    # b) AcmeHire → employment domain confirmed
+    acmehire_domain = [f for f in acmehire_ai if f.finding_type in ("ai_domain_confirmed", "ai_domain_multiple", "ai_domain_unclear")]
+    results.append(check(
+        "m) AcmeHire — candidate_ + FROM candidates → employment/recruitment domain confirmed",
+        acmehire_domain,
+        expect_fire=True,
+        required_types=["ai_domain_confirmed"],
+    ))
+    acmehire_domain_found = acmehire_domain[0].metadata.get("matched_domains", []) if acmehire_domain else []
+    print(f"       Domain detected: {acmehire_domain_found} (expected: ['employment/recruitment'])")
+    print()
+
+    # c) Dating app → domain unclear
+    dating_domain = [f for f in dating_ai if f.finding_type in ("ai_domain_confirmed", "ai_domain_multiple", "ai_domain_unclear")]
+    results.append(check(
+        "n) Dating app — MockLlmClient, no purpose signals → ai_domain_unclear",
+        dating_domain,
+        expect_fire=True,
+        required_types=["ai_domain_unclear"],
+    ))
+
+    # d) Multi-domain app (loan + patient) → ai_domain_multiple listing both
+    multi_ai = ai.scan(MULTI_DOMAIN_APP, "multi.py")
+    multi_domain = [f for f in multi_ai if f.finding_type in ("ai_domain_confirmed", "ai_domain_multiple", "ai_domain_unclear")]
+    results.append(check(
+        "o) Multi-domain (loan_applications + patients) → ai_domain_multiple with both credit and healthcare",
+        multi_domain,
+        expect_fire=True,
+        required_types=["ai_domain_multiple"],
+    ))
+    multi_domains = multi_domain[0].metadata.get("matched_domains", []) if multi_domain else []
+    print(f"       Domains detected: {multi_domains} (expected: credit/financial + healthcare)")
     print()
 
     print("─── Existing tests still pass ───────────────────────────────")
@@ -310,15 +399,22 @@ if __name__ == "__main__":
     print(f"\nNew tests: {passed}/{total} passed")
     print()
     # Before/after summary
-    print("─── Before/after summary: dating app sample ──────────────────")
-    print("BEFORE fix: employment term in guardrail → personal_data_detected (0.85)")
-    print("            → LLM context includes employment_data → classified as employment AI")
+    print("─── Before/after: rental app ─────────────────────────────────")
+    print("BEFORE: income/job_title matched employment signals → 'employment AI'")
+    print("AFTER :")
+    for f in rental_ai:
+        if f.finding_type in ("ai_domain_confirmed", "ai_domain_multiple", "ai_domain_unclear", "ai_provider_detected"):
+            domains = f.metadata.get("matched_domains", [])
+            d_str = f" domains={domains}" if domains else ""
+            print(f"  [{f.finding_type}] [{f.confidence:.2f}]{d_str} {f.title}")
     print()
-    print("AFTER  fix:")
-    dating_all = pd.scan(DATING_APP_GUARDRAIL, "dating_app.py") + ai.scan(DATING_APP_GUARDRAIL, "dating_app.py")
-    for f in dating_all:
-        tier = f.metadata.get("confidence_tier", "")
-        tier_str = f" [{tier}]" if tier else ""
-        print(f"  [{f.finding_type}] [{f.confidence:.2f}]{tier_str} {f.title}")
+    print("─── Before/after: AcmeHire ────────────────────────────────────")
+    print("BEFORE: candidate_score matched employment → correctly flagged but via old flat list")
+    print("AFTER :")
+    for f in acmehire_ai:
+        if f.finding_type in ("ai_domain_confirmed", "ai_domain_multiple", "ai_domain_unclear", "ai_provider_detected"):
+            domains = f.metadata.get("matched_domains", [])
+            d_str = f" domains={domains}" if domains else ""
+            print(f"  [{f.finding_type}] [{f.confidence:.2f}]{d_str} {f.title}")
     if passed < total:
         sys.exit(1)

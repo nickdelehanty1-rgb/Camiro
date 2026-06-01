@@ -120,34 +120,97 @@ AI_PROVIDER_PATTERNS = {
     ],
 }
 
-# Code-structure signals for AI Act Annex III high-risk domains.
-# These patterns match identifiers, SQL, class/function definitions, and URL paths —
-# NOT plain words in string literals or comments.
-# An AI system is only classified as high-risk in a domain when BOTH an AI model
-# AND at least one of these code-structure patterns are present.
-_HR_DOMAIN_CODE_SIGNALS: list[str] = [
-    # Employment / worker management (Annex III §4)
-    r'\bcandidate[_\.](id|name|score|status|email|data|rank)\b',
-    r'\bapplicant[_\.](id|name|score|status|data)\b',
-    r'class\s+\w*(Candidate|Applicant|Hiring|Recruitment|Interview)\b',
-    r'def\s+\w*(candidate|applicant|screen_|hire_|recruit)\w*\s*\(',
-    r'(?:FROM|JOIN|UPDATE|INSERT\s+INTO)\s+\w*(?:candidates|applicants|applications|jobs)\b',
-    r'[\'"/](?:candidates?|applicants?|applications?|recruitment|job_seekers)[\'"/]',
-    # Credit / financial services (Annex III §5b)
-    r'\bcredit[_\.](?:score|risk|limit|decision)\b',
-    r'\bloan[_\.](?:application|approval|decision|assessment)\b',
-    r'class\s+\w*(Credit|Loan|Insurance|Underwriting)\b',
-    r'def\s+\w*(credit_score|loan_decision|underwrite|assess_credit)\w*\s*\(',
-    # Healthcare / medical (Annex III §5a)
-    r'\bpatient[_\.](?:id|name|data|record|diagnosis)\b',
-    r'\b(?:diagnosis|diagnostic)_\w+\b',
-    r'class\s+\w*(Patient|Medical|Clinical|Diagnosis)\b',
-    r'(?:FROM|UPDATE)\s+\w*(?:patients|medical_records|diagnoses)\b',
-    # Education / student assessment (Annex III §3)
-    r'\bstudent[_\.](?:id|name|score|grade|data)\b',
-    r'\b(?:student_assessment|academic_score|enrollment_decision)\b',
-    r'class\s+\w*(Student|Academic|Enrollment)\b',
-]
+class DomainContextClassifier:
+    """
+    Classifies the Annex III domain of an AI system from code-structure PURPOSE signals.
+
+    Domain is determined by what the AI DECIDES — class names, function names, SQL
+    table names, and output variables that describe the decision context. Data fields
+    present as INPUTS (e.g. income in a housing app) do not trigger domain classification
+    because the same data can be used across multiple decision types.
+
+    Each domain has patterns that only match identifiers, class/function definitions,
+    SQL, or URL paths — not plain words in string literals or comments.
+    """
+
+    DOMAINS: dict[str, dict] = {
+        "employment/recruitment": {
+            "description": "employment/recruitment",
+            "annex_ref": "AI Act Annex III §4",
+            "patterns": [
+                r'\bcandidate[_\.](id|name|score|status|email|data|rank)\b',
+                r'\bapplicant[_\.](id|name|score|status|data)\b',
+                r'class\s+\w*(Candidate|Applicant|Hiring|Recruitment|Interview|Screening)\b',
+                r'def\s+\w*(candidate|applicant|screen_candidate|hire_|recruit_|screen_applicant)\w*\s*\(',
+                r'(?:FROM|JOIN|UPDATE|INSERT\s+INTO)\s+\w*(?:candidates|applicants|job_applications|job_seekers)\b',
+                r'\b(hiring_decision|employment_decision|job_offer|job_rejection)\b',
+                r'\b(cv_text|cv_score|resume_score|resume_text)\b',
+                r'\b(workforce_decision|termination_decision|promotion_decision)\b',
+            ],
+        },
+        "housing/property": {
+            "description": "housing/access-to-services",
+            "annex_ref": "AI Act Annex III §5",
+            "patterns": [
+                r'\btenant[_\.](id|name|score|status|application|data)\b',
+                r'\brental[_\.](?:application|decision|approval|screening|score)\b',
+                r'\brent[_\.](?:application|assessment|approval)\b',
+                r'class\s+\w*(Tenant|Rental|Property|Landlord|Housing|Letting)\b',
+                r'def\s+\w*(screen_tenant|assess_tenant|approve_rental|tenant_screen|rental_assess)\w*\s*\(',
+                r'(?:FROM|JOIN|UPDATE)\s+\w*(?:tenants|rentals|properties|lettings|leases)\b',
+                r'\b(rental_approved|rental_rejected|tenancy_granted|lease_approved|tenant_rejected)\b',
+                r'\b(tenancy_score|rental_score|deposit_assessment|move_in_assessment)\b',
+            ],
+        },
+        "credit/financial": {
+            "description": "credit/financial services",
+            "annex_ref": "AI Act Annex III §5b",
+            "patterns": [
+                # Require explicit credit/loan PURPOSE context — not bare credit_score which
+                # appears as an input data field in employment, housing, and other systems.
+                r'\bloan[_\.](?:application|approval|decision|assessment)\b',
+                r'class\s+\w*(Credit|Loan|Mortgage|Lending|Insurance|Underwriting)\b',
+                r'def\s+\w*(credit_score|loan_decision|underwrite|assess_credit|approve_loan)\w*\s*\(',
+                r'(?:FROM|UPDATE)\s+\w*(?:loan_applications|credit_applications|mortgages)\b',
+                r'\b(loan_approved|loan_rejected|credit_granted|mortgage_approved)\b',
+                r'\b(debt_to_income|debt_ratio|affordability_score|underwriting_decision)\b',
+                r'\bcredit[_\.](?:risk|limit|decision|application)\b',  # risk/limit/decision only — not bare credit_score
+            ],
+        },
+        "healthcare": {
+            "description": "healthcare",
+            "annex_ref": "AI Act Annex III §5a",
+            "patterns": [
+                r'\bpatient[_\.](?:id|name|data|record|diagnosis|assessment)\b',
+                r'\b(?:diagnosis|diagnostic)_\w+\b',
+                r'class\s+\w*(Patient|Medical|Clinical|Diagnosis|Healthcare|Triage)\b',
+                r'def\s+\w*(diagnose|triage_patient|medical_assess|clinical_decision|treatment_plan)\w*\s*\(',
+                r'(?:FROM|UPDATE)\s+\w*(?:patients|medical_records|diagnoses|clinical_notes)\b',
+                r'\b(treatment_recommendation|clinical_decision|medical_outcome|health_outcome)\b',
+                r'\b(icd_code|diagnosis_code|triage_level|clinical_score)\b',
+            ],
+        },
+        "education": {
+            "description": "education",
+            "annex_ref": "AI Act Annex III §3",
+            "patterns": [
+                r'\bstudent[_\.](?:id|name|score|grade|data|assessment)\b',
+                r'\b(?:student_assessment|academic_score|enrollment_decision|admission_decision)\b',
+                r'class\s+\w*(Student|Academic|Enrollment|Admission|Education)\b',
+                r'def\s+\w*(assess_student|grade_student|admit_student|enroll_student)\w*\s*\(',
+                r'(?:FROM|UPDATE)\s+\w*(?:students|academic_records|enrollments|admissions)\b',
+                r'\b(exam_result|academic_outcome|grade_prediction|admission_score)\b',
+            ],
+        },
+    }
+
+    def classify(self, code: str) -> list[str]:
+        """Return list of domain keys where code-structure purpose signals match."""
+        return [
+            domain_key
+            for domain_key, info in self.DOMAINS.items()
+            if any(re.search(p, code, re.IGNORECASE) for p in info["patterns"])
+        ]
 
 
 # Automated decision-making patterns
@@ -211,27 +274,27 @@ class AIUsageScanner(BaseScanner):
                         metadata={"provider": provider}
                     ))
 
-        # Domain-clarity check: if an AI system was detected, determine whether
-        # code-structure signals confirm a high-risk Annex III domain.
-        # Signals must appear in identifiers, SQL, class/function definitions, or
-        # URL paths — NOT in string literals or guardrail instructions.
+        # Domain classification: determine PRIMARY purpose from code-structure signals.
+        # Domain is classified from WHAT THE AI DECIDES (class names, function names,
+        # SQL tables, output variables) — NOT from which data fields are inputs.
+        # Employment data (income, job_title) in a housing app does NOT trigger
+        # employment classification; TenantScreeningService does.
         if detected_providers:
-            has_domain_signal = any(
-                re.search(p, code, re.IGNORECASE)
-                for p in _HR_DOMAIN_CODE_SIGNALS
-            )
-            if not has_domain_signal:
+            classifier = DomainContextClassifier()
+            matched_domains = classifier.classify(code)
+            providers_list = list(detected_providers.keys())
+
+            if not matched_domains:
                 findings.append(ScannerFinding(
                     scanner_name=self.name,
                     finding_type="ai_domain_unclear",
-                    title="AI system detected — domain context requires review",
+                    title="AI system detected — domain classification requires legal review",
                     description=(
-                        "AI system detected. Domain context unclear — high-risk AI Act "
-                        "classification requires legal review. Current evidence does not "
-                        "confirm employment, credit, health, or education context from "
-                        "code structure alone. If this system is used in an Annex III "
-                        "context (employment, credit, healthcare, education), high-risk "
-                        "classification obligations apply. Human legal review required."
+                        "AI system detected. Domain classification requires legal review. "
+                        "Current evidence does not confirm employment, credit, healthcare, "
+                        "education, or housing context from code structure alone. "
+                        "If this system is deployed in an AI Act Annex III context, "
+                        "high-risk classification obligations apply. Human legal review required."
                     ),
                     confidence=0.75,
                     file_path=filename,
@@ -239,7 +302,72 @@ class AIUsageScanner(BaseScanner):
                     suggested_node_type="ai_system",
                     metadata={
                         "domain_confirmed": False,
-                        "detected_providers": list(detected_providers.keys()),
+                        "matched_domains": [],
+                        "detected_providers": providers_list,
+                    },
+                ))
+            elif len(matched_domains) == 1:
+                domain_key = matched_domains[0]
+                info = DomainContextClassifier.DOMAINS[domain_key]
+                findings.append(ScannerFinding(
+                    scanner_name=self.name,
+                    finding_type="ai_domain_confirmed",
+                    title=(
+                        f"AI system in {info['description']} context — "
+                        f"AI Act high-risk review required ({info['annex_ref']})"
+                    ),
+                    description=(
+                        f"Code-structure signals confirm this AI system operates in a "
+                        f"{info['description']} context ({info['annex_ref']}). "
+                        f"If it makes or influences decisions with legal or similarly "
+                        f"significant effects on individuals, high-risk classification "
+                        f"obligations under the AI Act may apply. "
+                        f"Legal review required before deployment."
+                    ),
+                    confidence=0.80,
+                    file_path=filename,
+                    tags=["ai_system", "AI_ACT_ART6_HIGH_RISK", "requires_review",
+                          domain_key.replace("/", "_").replace(" ", "_")],
+                    suggested_node_type="ai_system",
+                    metadata={
+                        "domain_confirmed": True,
+                        "matched_domains": matched_domains,
+                        "detected_providers": providers_list,
+                        "annex_ref": info["annex_ref"],
+                    },
+                ))
+            else:
+                # Multiple domains — list all and flag for review
+                domain_labels = ", ".join(
+                    DomainContextClassifier.DOMAINS[d]["description"]
+                    for d in matched_domains
+                )
+                annex_refs = ", ".join(
+                    DomainContextClassifier.DOMAINS[d]["annex_ref"]
+                    for d in matched_domains
+                )
+                findings.append(ScannerFinding(
+                    scanner_name=self.name,
+                    finding_type="ai_domain_multiple",
+                    title=(
+                        f"Multiple AI Act domain signals detected: {domain_labels}"
+                    ),
+                    description=(
+                        f"Code-structure signals match multiple AI Act Annex III domains: "
+                        f"{domain_labels} ({annex_refs}). "
+                        f"Multiple domain signals detected. Legal review required for "
+                        f"AI Act high-risk classification. Each applicable domain may "
+                        f"carry independent high-risk obligations."
+                    ),
+                    confidence=0.78,
+                    file_path=filename,
+                    tags=["ai_system", "AI_ACT_ART6_HIGH_RISK", "requires_review"],
+                    suggested_node_type="ai_system",
+                    metadata={
+                        "domain_confirmed": True,
+                        "matched_domains": matched_domains,
+                        "detected_providers": providers_list,
+                        "annex_refs": annex_refs,
                     },
                 ))
 
