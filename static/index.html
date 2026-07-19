@@ -1016,6 +1016,36 @@ function reset() {
     : '← Scan different code';
 }
 
+// Deduplicate and normalise article citations for PDF rendering.
+// Eliminates "Art. 13 · Art. 13, Art. 14" bugs by extracting unique article
+// numbers, forming en-dash ranges, and using "Articles" for 2+.
+function _dedupCite(aiActArt, gdprArt) {
+  const refs = [aiActArt, gdprArt].filter(Boolean);
+  if (!refs.length) return '';
+  const nums = new Set();
+  for (const ref of refs) {
+    for (const m of ref.matchAll(/Art(?:icle)?s?\.?\s*(\d+)/gi)) {
+      nums.add(parseInt(m[1], 10));
+    }
+  }
+  if (!nums.size) {
+    const unique = [...new Set(refs.map(r => r.trim()))];
+    return unique.join(' · ');
+  }
+  const sorted = [...nums].sort((a, b) => a - b);
+  const groups = [];
+  let s = sorted[0], e = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === e + 1) { e = sorted[i]; }
+    else { groups.push(s === e ? String(s) : s + '–' + e); s = e = sorted[i]; }
+  }
+  groups.push(s === e ? String(s) : s + '–' + e);
+  const prefix = sorted.length > 1 ? 'Articles' : 'Article';
+  if (groups.length === 1) return prefix + ' ' + groups[0];
+  if (groups.length === 2) return prefix + ' ' + groups[0] + ' and ' + groups[1];
+  return prefix + ' ' + groups.slice(0, -1).join(', ') + ' and ' + groups[groups.length - 1];
+}
+
 function downloadPDF() {
   if (!currentData) return;
   const { jsPDF } = window.jspdf;
@@ -1096,14 +1126,12 @@ function downloadPDF() {
     doc.setFillColor(248,249,246);
     doc.setDrawColor(232,228,221);
     doc.roundedRect(sx, y, sw, 16, 2, 2, 'FD');
-    doc.setFontSize(16);
+    // Defect fix: render value and label as a single doc.text() array call so
+    // extracted text reads "8 Total Issues" rather than detached digits.
+    doc.setFontSize(10);
     doc.setFont('helvetica','bold');
     doc.setTextColor(...(i===1?[185,28,28]:i===2?[146,64,14]:FOREST));
-    doc.text(st.val, sx+sw/2, y+10, {align:'center'});
-    doc.setFontSize(7);
-    doc.setFont('helvetica','normal');
-    doc.setTextColor(...MUTED);
-    doc.text(st.label, sx+sw/2, y+14.5, {align:'center'});
+    doc.text([st.val, st.label], sx+sw/2, y+8, {align:'center', lineHeightFactor:1.4});
   });
   y += 22;
 
@@ -1147,10 +1175,16 @@ function downloadPDF() {
     };
     const sev = f.severity||'info';
 
+    // Pre-compute citation (needed for blockH calculation — citation height must be included)
+    const cite = _dedupCite(f.ai_act_article, f.gdpr_article);
+    const citeH = cite ? 6 : 0;
+
     const titleLines = doc.splitTextToSize(f.title||'', CW-60);
     const descLines = doc.splitTextToSize(f.description||'', CW-12);
-    const recLines = f.recommendation ? doc.splitTextToSize('→ '+f.recommendation, CW-20) : [];
-    const blockH = 8 + titleLines.length*5 + descLines.length*4.5 + (recLines.length>0?recLines.length*4.5+6:0) + 8;
+    // Defect fix: widen recommendation frame; no Unicode glyph prefix (extracts cleanly)
+    const recLines = f.recommendation ? doc.splitTextToSize(f.recommendation, CW-16) : [];
+    // Defect fix: include citeH so recommendation text is never clipped mid-word
+    const blockH = 8 + titleLines.length*5 + descLines.length*4.5 + citeH + (recLines.length>0?recLines.length*4.5+6:0) + 8;
 
     if (y + blockH > 270) { doc.addPage(); y = 20; }
 
@@ -1182,17 +1216,20 @@ function downloadPDF() {
     doc.text(descLines, M+6, fy);
     fy += descLines.length*4.5;
 
-    // Citation
-    const cite = [f.ai_act_article, f.gdpr_article].filter(Boolean).join(' · ');
+    // Citation — defect fix: remove all symbol-font glyphs; use only body-font text
+    // (⚖ and → both produce !'' artifacts in pdftotext via jsPDF WinAnsiEncoding)
     if (cite) {
       doc.setFontSize(8);
       doc.setFont('helvetica','bold');
       doc.setTextColor(...GREEN);
-      doc.text('⚖ ' + cite, M+6, fy+2);
+      // Small filled square as visual indicator (shape API, not a glyph — extracts cleanly)
+      doc.setFillColor(...GREEN);
+      doc.rect(M+6, fy-1, 1.5, 2, 'F');
+      doc.text(cite, M+9, fy+2);
       fy += 6;
     }
 
-    // Recommendation
+    // Recommendation — defect fix: no Unicode prefix glyph; frame provides visual context
     if (recLines.length > 0) {
       doc.setFillColor(...LIGHT_BG);
       doc.roundedRect(M+4, fy+1, CW-8, recLines.length*4.5+4, 1.5, 1.5, 'F');
@@ -1247,7 +1284,9 @@ function downloadPDF() {
   const dLines = doc.splitTextToSize(disclaimer, CW-12);
   doc.text(dLines, M+6, y+6);
 
-  // Page footer
+  // Page footer — defect fix: include scan date, model and ruleset version
+  const scanDate = currentData._date || new Date().toISOString().slice(0,10);
+  const modelLabel = currentData._model || 'camiro';
   const pageCount = doc.getNumberOfPages();
   for (let p=1; p<=pageCount; p++) {
     doc.setPage(p);
@@ -1256,7 +1295,7 @@ function downloadPDF() {
     doc.setFontSize(7);
     doc.setFont('helvetica','normal');
     doc.setTextColor(180,220,200);
-    doc.text(`Camiro · EU Regulatory Intelligence · camiro.ai`, M, 293);
+    doc.text(`Camiro · ${scanDate} · ${modelLabel} · ruleset v1`, M, 293);
     doc.text(`Page ${p} of ${pageCount}`, W-M, 293, {align:'right'});
   }
 
@@ -1753,13 +1792,14 @@ function _downloadDemoPDF() {
   const disc = 'This report does not constitute legal advice and does not assess compliance or legal status. All findings require review by qualified legal, privacy, and technical professionals. Camiro provides technical evidence support only.';
   doc.text(doc.splitTextToSize(disc, CW - 8), M + 4, y + 4);
 
-  // Footer
+  // Footer — include scan date and model version
+  const demoScanDate = new Date().toISOString().slice(0, 10);
   const pages = doc.getNumberOfPages();
   for (let p = 1; p <= pages; p++) {
     doc.setPage(p);
     doc.setFillColor(...FOREST); doc.rect(0, 287, W, 10, 'F');
     doc.setFontSize(7); doc.setTextColor(180, 220, 200);
-    doc.text('Camiro · EU AI/GDPR Evidence Agent Review · camiro.ai', M, 293);
+    doc.text(`Camiro · ${demoScanDate} · camiro-fable-5 · ruleset v1`, M, 293);
     doc.text(`Page ${p} of ${pages}`, W - M, 293, { align: 'right' });
   }
 

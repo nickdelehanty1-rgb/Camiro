@@ -21,6 +21,7 @@ from app.scanners.secret_scanner import redact_secrets
 from app.graph.builder import GraphBuilder
 from app.corpus.loader import load_obligation_seeds, load_corpus_registry
 from app.settings import settings
+from app.utils.articles import format_articles
 
 app = FastAPI(title="Camiro", description="EU Regulatory Intelligence Platform")
 
@@ -236,6 +237,7 @@ def _doc_finding_to_output(f: dict) -> dict:
         "requires_review": "low",
         "observed": "info",
     }
+    raw_arts = [a for a in [ai_act, gdpr] if a]
     return {
         "title": f.get("title", ""),
         "severity": severity_map.get(finding_type, "info"),
@@ -243,6 +245,8 @@ def _doc_finding_to_output(f: dict) -> dict:
         "description": f.get("description", ""),
         "ai_act_article": ai_act,
         "gdpr_article": gdpr,
+        "articles": raw_arts,
+        "articles_formatted": format_articles(raw_arts),
         "file_hint": f.get("file_path") or "",
         "recommendation": _DOC_FINDING_RECOMMENDATIONS.get(finding_type, ""),
         "observed_or_inferred": "observed" if finding_type == "observed" else "inferred",
@@ -482,6 +486,15 @@ async def _run_full_scan(code: str, filename: str,
         llm_result = _fallback_result(scanner_results)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")
+
+    # Step 5b: Normalise article citations in each finding
+    import datetime
+    for finding in llm_result.get("findings", []):
+        raw_arts = [a for a in [finding.get("ai_act_article"), finding.get("gdpr_article")] if a]
+        finding["articles"] = raw_arts
+        finding["articles_formatted"] = format_articles(raw_arts)
+    llm_result["_date"] = datetime.date.today().isoformat()
+    llm_result["_model"] = settings.camiro_model
 
     # Step 6: Merge graph context into response
     llm_result["_graph"] = {
