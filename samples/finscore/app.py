@@ -39,7 +39,7 @@ def assess_loan_application(application_id: int) -> dict:
     logger.info(f"Processing application: {app[1]} email={app[2]} national_id={app[6]}")
 
     message = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=50,
         messages=[{
             "role": "user",

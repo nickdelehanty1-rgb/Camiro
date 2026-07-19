@@ -465,7 +465,7 @@ async def _run_full_scan(code: str, filename: str,
     try:
         client = anthropic.Anthropic(api_key=API_KEY)
         msg = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=3000,
             system=SYSTEM,
             messages=[{"role": "user", "content": prompt}]
