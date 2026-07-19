@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     max_input_chars: int = 50000
     demo_password: Optional[str] = None
 
+    # LLM
+    camiro_model: str = "claude-fable-5"
+    max_tokens: int = 3000
+
+    # Rate limiting (requests per hour per IP)
+    rate_limit_per_hour: int = 10
+
     # Security
     redact_secrets: bool = True
     log_submitted_code: bool = False

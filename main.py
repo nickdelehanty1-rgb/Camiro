@@ -20,12 +20,13 @@ from app.scanners.orchestrator import run_all_scanners, run_document_scan, run_a
 from app.scanners.secret_scanner import redact_secrets
 from app.graph.builder import GraphBuilder
 from app.corpus.loader import load_obligation_seeds, load_corpus_registry
+from app.settings import settings
 
 app = FastAPI(title="Camiro", description="EU Regulatory Intelligence Platform")
 
 # ── Config ──────────────────────────────────────────────────────────────────
-API_KEY = os.getenv("API_KEY", "")
-MAX_INPUT_CHARS = int(os.getenv("MAX_INPUT_CHARS", "50000"))
+API_KEY = settings.api_key
+MAX_INPUT_CHARS = settings.max_input_chars
 DEMO_ORG_ID = "00000000-0000-0000-0000-000000000001"
 DEMO_PROJECT_ID = "00000000-0000-0000-0000-000000000002"
 
@@ -465,8 +466,8 @@ async def _run_full_scan(code: str, filename: str,
     try:
         client = anthropic.Anthropic(api_key=API_KEY)
         msg = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=3000,
+            model=settings.camiro_model,
+            max_tokens=settings.max_tokens,
             system=SYSTEM,
             messages=[{"role": "user", "content": prompt}]
         )
