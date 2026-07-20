@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import anthropic
@@ -8,6 +8,7 @@ import re
 import uuid
 from dotenv import load_dotenv
 import logging
+import io
 
 load_dotenv()
 
@@ -422,6 +423,61 @@ async def scan_document(inp: DocumentScanInput):
     }
     doc_response.update(compute_compliance_score(doc_response))
     return doc_response
+
+
+def _extract_text_from_upload(file: UploadFile) -> str:
+    """Extract plain text from an uploaded PDF or DOCX file."""
+    data = file.file.read()
+    name = (file.filename or "").lower()
+
+    if name.endswith(".pdf"):
+        try:
+            import pdfplumber
+        except ImportError:
+            raise HTTPException(status_code=500, detail="PDF extraction library not installed.")
+        text_parts = []
+        with pdfplumber.open(io.BytesIO(data)) as pdf:
+            for page in pdf.pages:
+                t = page.extract_text()
+                if t:
+                    text_parts.append(t)
+        return "\n".join(text_parts)
+
+    if name.endswith(".docx"):
+        try:
+            from docx import Document
+        except ImportError:
+            raise HTTPException(status_code=500, detail="DOCX extraction library not installed.")
+        doc = Document(io.BytesIO(data))
+        return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+
+    raise HTTPException(
+        status_code=415,
+        detail=f"Unsupported file type. Only PDF (.pdf) and DOCX (.docx) are accepted. Got: {file.filename!r}",
+    )
+
+
+@app.post("/scan/upload")
+async def scan_upload(file: UploadFile = File(...)):
+    """Accept a PDF or DOCX upload, extract text, and run the document scanner.
+
+    Keeps the existing paste path (/scan/document) unchanged.
+    Enforces MAX_INPUT_CHARS on the extracted text.
+    """
+    text = _extract_text_from_upload(file)
+
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Could not extract any text from the uploaded file.")
+
+    if len(text) > MAX_INPUT_CHARS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Extracted text is too large ({len(text)} chars). Maximum {MAX_INPUT_CHARS} characters.",
+        )
+
+    filename = file.filename or "uploaded_document"
+    inp = DocumentScanInput(text=text, filename=filename)
+    return await scan_document(inp)
 
 
 @app.get("/corpus/sources")

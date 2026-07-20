@@ -9,3 +9,6 @@ alembic
 psycopg2-binary
 pyyaml
 python-dotenv
+pdfplumber
+python-docx
+slowapi
