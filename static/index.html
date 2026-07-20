@@ -147,12 +147,16 @@ textarea::placeholder{color:var(--light);font-family:'JetBrains Mono',monospace}
 .dot-high{background:var(--amber)}
 .dot-limited{background:var(--blue)}
 .dot-minimal{background:var(--sage)}
-.risk-level{font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase}
+.risk-level{font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;flex:1}
 .level-prohibited{color:var(--red)}
 .level-high{color:var(--amber)}
 .level-limited{color:var(--blue)}
 .level-minimal{color:var(--green800)}
 .risk-summary{font-size:13.5px;line-height:1.65;color:var(--text)}
+.score-badge{display:flex;align-items:baseline;gap:4px;margin-left:auto;background:rgba(0,0,0,0.06);border-radius:4px;padding:3px 8px;flex-shrink:0}
+.score-num{font-family:'DM Serif Display',serif;font-size:18px;line-height:1;letter-spacing:-0.5px}
+.score-band{font-size:11px;font-weight:700;letter-spacing:0.5px}
+.score-hint{font-size:12px;color:var(--muted);margin-top:6px;font-style:italic;line-height:1.5}
 
 /* METRICS */
 .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:20px}
@@ -491,8 +495,13 @@ def score_candidate(user_id, cv_text, age, gender):
       <div class="risk-header">
         <div id="riskDot" class="risk-dot"></div>
         <span id="riskLevel" class="risk-level"></span>
+        <div id="scoreBadge" class="score-badge" title="Compliance score — higher is more compliant">
+          <span id="scoreNum" class="score-num">—</span>
+          <span id="scoreBand" class="score-band">?</span>
+        </div>
       </div>
       <div id="riskSummary" class="risk-summary"></div>
+      <div id="scoreHint" class="score-hint"></div>
     </div>
 
     <div class="metrics">
@@ -954,6 +963,18 @@ function render(d) {
   document.getElementById('riskLevel').textContent = (d.risk_level||'unknown').toUpperCase() + ' RISK';
   document.getElementById('riskSummary').textContent = d.risk_summary || '';
 
+  // Compliance score (Phase 3)
+  if (d.compliance_score != null) {
+    document.getElementById('scoreNum').textContent = d.compliance_score;
+    document.getElementById('scoreBand').textContent = d.risk_band || '?';
+    document.getElementById('scoreBadge').style.display = 'flex';
+  } else {
+    document.getElementById('scoreBadge').style.display = 'none';
+  }
+  document.getElementById('scoreHint').textContent = d.score_hint
+    ? 'To improve: ' + d.score_hint
+    : '';
+
   document.getElementById('m1').textContent = d.stats?.total_issues ?? '—';
   document.getElementById('m2').textContent = d.stats?.high_severity ?? '—';
   document.getElementById('m3').textContent = d.stats?.medium_severity ?? '—';
@@ -1100,18 +1121,37 @@ function downloadPDF() {
     minimal: { bg:[240,250,244], border:[82,183,136], text:[22,101,52], label:'MINIMAL RISK' },
   };
   const rc = riskColors[currentData.risk_level] || riskColors.minimal;
+  const hasScore = currentData.compliance_score != null;
+  const bannerH = hasScore ? 30 : 22;
   doc.setFillColor(...rc.bg);
   doc.setDrawColor(...rc.border);
-  doc.roundedRect(M, y, CW, 22, 3, 3, 'FD');
+  doc.roundedRect(M, y, CW, bannerH, 3, 3, 'FD');
   doc.setFontSize(9);
   doc.setFont('helvetica','bold');
   doc.setTextColor(...rc.text);
   doc.text(rc.label, M+8, y+8);
+  // Compliance score badge — top-right of the banner
+  if (hasScore) {
+    const scoreStr = String(currentData.compliance_score) + '  ' + (currentData.risk_band || '?');
+    doc.setFontSize(14);
+    doc.setFont('helvetica','bold');
+    doc.text(scoreStr, W-M-6, y+10, {align:'right'});
+    doc.setFontSize(7);
+    doc.setFont('helvetica','normal');
+    doc.text('Compliance score / band', W-M-6, y+15, {align:'right'});
+  }
   doc.setFontSize(10);
   doc.setFont('helvetica','normal');
   const summaryLines = doc.splitTextToSize(currentData.risk_summary || '', CW-16);
   doc.text(summaryLines, M+8, y+14);
-  y += 28;
+  // Score improvement hint
+  if (hasScore && currentData.score_hint) {
+    const hintLines = doc.splitTextToSize('To improve: ' + currentData.score_hint, CW-16);
+    doc.setFontSize(8);
+    doc.setTextColor(...MUTED);
+    doc.text(hintLines, M+8, y+bannerH-4);
+  }
+  y += bannerH + 6;
 
   // Stats row
   const stats = [

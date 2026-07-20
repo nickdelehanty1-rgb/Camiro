@@ -22,6 +22,7 @@ from app.graph.builder import GraphBuilder
 from app.corpus.loader import load_obligation_seeds, load_corpus_registry
 from app.settings import settings
 from app.utils.articles import format_articles
+from app.utils.scoring import compute_compliance_score
 
 app = FastAPI(title="Camiro", description="EU Regulatory Intelligence Platform")
 
@@ -390,7 +391,8 @@ async def scan_document(inp: DocumentScanInput):
         if f["finding_type"] in ("contradiction", "missing_evidence")
     ] or ["Review document findings with your legal and privacy team."]
 
-    return {
+    import datetime
+    doc_response = {
         "document_type": doc_type,
         "risk_level": risk_level,
         "gdpr_risk": "unknown",
@@ -410,12 +412,16 @@ async def scan_document(inp: DocumentScanInput):
         "immediate_actions": immediate_actions,
         "missing_information": [],
         "suggested_next_questions": [],
+        "_date": datetime.date.today().isoformat(),
+        "_model": settings.camiro_model,
         "_disclaimer": (
             "Camiro provides technical compliance decision support. "
             "It is not legal advice and does not replace review by qualified "
             "legal, privacy, security or regulatory professionals."
         ),
     }
+    doc_response.update(compute_compliance_score(doc_response))
+    return doc_response
 
 
 @app.get("/corpus/sources")
@@ -487,7 +493,7 @@ async def _run_full_scan(code: str, filename: str,
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")
 
-    # Step 5b: Normalise article citations in each finding
+    # Step 5b: Normalise article citations and compute compliance score
     import datetime
     for finding in llm_result.get("findings", []):
         raw_arts = [a for a in [finding.get("ai_act_article"), finding.get("gdpr_article")] if a]
@@ -495,6 +501,8 @@ async def _run_full_scan(code: str, filename: str,
         finding["articles_formatted"] = format_articles(raw_arts)
     llm_result["_date"] = datetime.date.today().isoformat()
     llm_result["_model"] = settings.camiro_model
+    score_result = compute_compliance_score(llm_result)
+    llm_result.update(score_result)
 
     # Step 6: Merge graph context into response
     llm_result["_graph"] = {
