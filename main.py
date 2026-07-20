@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Depends
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import anthropic
@@ -9,6 +9,9 @@ import uuid
 from dotenv import load_dotenv
 import logging
 import io
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 load_dotenv()
 
@@ -27,11 +30,32 @@ from app.utils.scoring import compute_compliance_score
 
 app = FastAPI(title="Camiro", description="EU Regulatory Intelligence Platform")
 
+# ── Rate limiting ────────────────────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+_RATE_LIMIT = f"{settings.rate_limit_per_hour}/hour"
+
 # ── Config ──────────────────────────────────────────────────────────────────
 API_KEY = settings.api_key
 MAX_INPUT_CHARS = settings.max_input_chars
 DEMO_ORG_ID = "00000000-0000-0000-0000-000000000001"
 DEMO_PROJECT_ID = "00000000-0000-0000-0000-000000000002"
+
+
+def _require_password(request: Request) -> None:
+    """If DEMO_PASSWORD is set, gate scan endpoints behind it.
+
+    Clients send the password via the X-Demo-Password header.
+    If the env var is unset, all requests pass through.
+    """
+    pw = settings.demo_password
+    if not pw:
+        return
+    provided = request.headers.get("X-Demo-Password", "")
+    if provided != pw:
+        raise HTTPException(status_code=401, detail="Unauthorised: invalid or missing demo password.")
 
 # ── Models ───────────────────────────────────────────────────────────────────
 class CodeInput(BaseModel):
@@ -327,8 +351,11 @@ async def scanner():
 
 
 @app.post("/analyse")
-async def analyse(inp: CodeInput):
+@limiter.limit(_RATE_LIMIT)
+async def analyse(request: Request, inp: CodeInput, _: None = Depends(_require_password)):
     """Backward-compatible demo endpoint. Now uses full scanner + graph + LLM pipeline."""
+    if len(inp.code) > MAX_INPUT_CHARS:
+        raise HTTPException(status_code=400, detail=f"Input too large. Maximum {MAX_INPUT_CHARS} characters.")
     return await _run_full_scan(
         code=inp.code,
         filename=inp.filename,
@@ -338,8 +365,11 @@ async def analyse(inp: CodeInput):
 
 
 @app.post("/scan/code")
-async def scan_code(inp: ScanInput):
+@limiter.limit(_RATE_LIMIT)
+async def scan_code(request: Request, inp: ScanInput, _: None = Depends(_require_password)):
     """Full scan endpoint with organisation and project context."""
+    if len(inp.code) > MAX_INPUT_CHARS:
+        raise HTTPException(status_code=400, detail=f"Input too large. Maximum {MAX_INPUT_CHARS} characters.")
     org_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, inp.organisation_name))
     proj_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, inp.project_name))
     result = await _run_full_scan(
@@ -352,7 +382,8 @@ async def scan_code(inp: ScanInput):
 
 
 @app.post("/scan/document")
-async def scan_document(inp: DocumentScanInput):
+@limiter.limit(_RATE_LIMIT)
+async def scan_document(request: Request, inp: DocumentScanInput, _: None = Depends(_require_password)):
     """Document evidence scanner — privacy notices, DPIAs, DPAs, product specs, AI policies."""
     if not inp.text.strip():
         raise HTTPException(status_code=400, detail="No document text provided")
@@ -458,7 +489,8 @@ def _extract_text_from_upload(file: UploadFile) -> str:
 
 
 @app.post("/scan/upload")
-async def scan_upload(file: UploadFile = File(...)):
+@limiter.limit(_RATE_LIMIT)
+async def scan_upload(request: Request, file: UploadFile = File(...), _: None = Depends(_require_password)):
     """Accept a PDF or DOCX upload, extract text, and run the document scanner.
 
     Keeps the existing paste path (/scan/document) unchanged.
@@ -477,7 +509,7 @@ async def scan_upload(file: UploadFile = File(...)):
 
     filename = file.filename or "uploaded_document"
     inp = DocumentScanInput(text=text, filename=filename)
-    return await scan_document(inp)
+    return await scan_document(request, inp)
 
 
 @app.get("/corpus/sources")
@@ -511,6 +543,12 @@ async def _run_full_scan(code: str, filename: str,
             status_code=400,
             detail=f"Input too large. Maximum {MAX_INPUT_CHARS} characters."
         )
+
+    # Only log submitted code when explicitly enabled; off by default.
+    if settings.log_submitted_code:
+        logger.debug("Submitted code (LOG_SUBMITTED_CODE=true): %s … (%d chars)", code[:200], len(code))
+    else:
+        logger.debug("Scan started for file=%s len=%d (code not logged)", filename, len(code))
 
     scan_run_id = str(uuid.uuid4())
 
