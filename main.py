@@ -617,6 +617,17 @@ async def _run_full_scan(code: str, filename: str,
         raw_arts = [a for a in [finding.get("ai_act_article"), finding.get("gdpr_article")] if a]
         finding["articles"] = raw_arts
         finding["articles_formatted"] = format_articles(raw_arts)
+
+    # Deterministic override: if the scanner's preliminary risk is "minimal" and the LLM
+    # has no high-severity findings, trust the scanner over the LLM's "limited" tier.
+    # This prevents the LLM from over-classifying well-designed anonymised code.
+    scanner_prelim = scanner_results.get("summary", {}).get("preliminary_risk_level", "")
+    llm_findings = llm_result.get("findings", [])
+    if (scanner_prelim == "minimal"
+            and llm_result.get("risk_level") == "limited"
+            and not any(f.get("severity") in ("high", "critical") for f in llm_findings)):
+        llm_result["risk_level"] = "minimal"
+
     llm_result["_date"] = datetime.date.today().isoformat()
     llm_result["_model"] = settings.camiro_model
     score_result = compute_compliance_score(llm_result)
