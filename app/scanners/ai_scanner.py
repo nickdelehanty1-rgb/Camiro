@@ -170,11 +170,14 @@ class DomainContextClassifier:
                 # appears as an input data field in employment, housing, and other systems.
                 r'\bloan[_\.](?:application|approval|decision|assessment)\b',
                 r'class\s+\w*(Credit|Loan|Mortgage|Lending|Insurance|Underwriting)\b',
-                r'def\s+\w*(credit_score|loan_decision|underwrite|assess_credit|approve_loan)\w*\s*\(',
-                r'(?:FROM|UPDATE)\s+\w*(?:loan_applications|credit_applications|mortgages)\b',
+                r'def\s+\w*(credit_score|loan_decision|underwrite|assess_credit|approve_loan|assess_loan|evaluate_loan|score_loan)\w*\s*\(',
+                r'(?:FROM|UPDATE)\s+\w*(?:loan_applications|credit_applications|mortgages|applications)\s.*(?:decision|approved|denied)\b',
                 r'\b(loan_approved|loan_rejected|credit_granted|mortgage_approved)\b',
                 r'\b(debt_to_income|debt_ratio|affordability_score|underwriting_decision)\b',
                 r'\bcredit[_\.](?:risk|limit|decision|application)\b',  # risk/limit/decision only — not bare credit_score
+                # Scoring dicts with income/employment as keys = credit scoring context
+                r'WEIGHTS\s*=\s*\{[^}]*"income"[^}]*\}',
+                r'\b(?:approved|denied)\b.*\bscore\b|\bscore\b.*\b(?:approved|denied)\b',
             ],
         },
         "healthcare": {
@@ -274,59 +277,64 @@ class AIUsageScanner(BaseScanner):
                         metadata={"provider": provider}
                     ))
 
-        # Domain classification: determine PRIMARY purpose from code-structure signals.
-        # Domain is classified from WHAT THE AI DECIDES (class names, function names,
-        # SQL tables, output variables) — NOT from which data fields are inputs.
-        # Employment data (income, job_title) in a housing app does NOT trigger
-        # employment classification; TenantScreeningService does.
-        if detected_providers:
+        # Domain classification: run always — not only when explicit AI providers are
+        # detected — so that pure algorithmic tools (regex ranking, rule-based scoring)
+        # in Annex III domains are flagged for EU AI Act high-risk review.
+        # Domain is determined by WHAT THE TOOL DECIDES (class/function names, SQL
+        # table names, output variables), not which data fields are inputs.
+        if True:  # always run; was gated on detected_providers previously
             classifier = DomainContextClassifier()
             matched_domains = classifier.classify(code)
             providers_list = list(detected_providers.keys())
 
             if not matched_domains:
-                findings.append(ScannerFinding(
-                    scanner_name=self.name,
-                    finding_type="ai_domain_unclear",
-                    title="AI system detected — domain classification requires legal review",
-                    description=(
-                        "AI system detected. Domain classification requires legal review. "
-                        "Current evidence does not confirm employment, credit, healthcare, "
-                        "education, or housing context from code structure alone. "
-                        "If this system is deployed in an AI Act Annex III context, "
-                        "high-risk classification obligations apply. Human legal review required."
-                    ),
-                    confidence=0.75,
-                    file_path=filename,
-                    tags=["ai_system", "AI_ACT_ART6_HIGH_RISK", "requires_review"],
-                    suggested_node_type="ai_system",
-                    metadata={
-                        "domain_confirmed": False,
-                        "matched_domains": [],
-                        "detected_providers": providers_list,
-                    },
-                ))
+                if detected_providers:
+                    findings.append(ScannerFinding(
+                        scanner_name=self.name,
+                        finding_type="ai_domain_unclear",
+                        title="AI system detected — domain classification requires legal review",
+                        description=(
+                            "AI system detected. Domain classification requires legal review. "
+                            "Current evidence does not confirm employment, credit, healthcare, "
+                            "education, or housing context from code structure alone. "
+                            "If this system is deployed in an AI Act Annex III context, "
+                            "high-risk classification obligations apply. Human legal review required."
+                        ),
+                        confidence=0.75,
+                        file_path=filename,
+                        tags=["ai_system", "AI_ACT_ART6_HIGH_RISK", "requires_review"],
+                        suggested_node_type="ai_system",
+                        metadata={
+                            "domain_confirmed": False,
+                            "matched_domains": [],
+                            "detected_providers": providers_list,
+                        },
+                    ))
+                # else: no providers AND no domain signal — truly unrelated code; skip
             elif len(matched_domains) == 1:
                 domain_key = matched_domains[0]
                 info = DomainContextClassifier.DOMAINS[domain_key]
+                has_ai = bool(detected_providers)
                 findings.append(ScannerFinding(
                     scanner_name=self.name,
                     finding_type="ai_domain_confirmed",
                     title=(
-                        f"AI system in {info['description']} context — "
-                        f"AI Act high-risk review required ({info['annex_ref']})"
+                        f"{'AI system' if has_ai else 'Decision tool'} in "
+                        f"{info['description']} context — "
+                        f"AI Act Annex III high-risk review required ({info['annex_ref']})"
                     ),
                     description=(
-                        f"Code-structure signals confirm this AI system operates in a "
-                        f"{info['description']} context ({info['annex_ref']}). "
-                        f"If it makes or influences decisions with legal or similarly "
-                        f"significant effects on individuals, high-risk classification "
-                        f"obligations under the AI Act may apply. "
+                        f"Code-structure signals confirm this "
+                        f"{'AI system' if has_ai else 'algorithmic decision tool'} "
+                        f"operates in a {info['description']} context ({info['annex_ref']}). "
+                        f"{'Employment triage, ranking and scoring tools' if 'employment' in domain_key else 'Tools'} "
+                        f"that make or influence decisions with legal or similarly significant "
+                        f"effects on individuals may require high-risk AI Act classification. "
                         f"Legal review required before deployment."
                     ),
-                    confidence=0.80,
+                    confidence=0.80 if has_ai else 0.70,
                     file_path=filename,
-                    tags=["ai_system", "AI_ACT_ART6_HIGH_RISK", "requires_review",
+                    tags=["ai_system", "AI_ACT_ART6_HIGH_RISK", "AI_ACT_ART6", "requires_review",
                           domain_key.replace("/", "_").replace(" ", "_")],
                     suggested_node_type="ai_system",
                     metadata={

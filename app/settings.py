@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     # LLM
     camiro_model: str = "claude-fable-5"
-    max_tokens: int = 3000
+    max_tokens: int = 16000
 
     # Rate limiting (requests per hour per IP)
     rate_limit_per_hour: int = 10
