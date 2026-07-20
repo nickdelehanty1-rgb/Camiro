@@ -43,6 +43,12 @@ NON_EEA_PATTERNS = [
     r'ap-southeast|ap-northeast|ap-south',
     r'ca-central',
     r'sa-east',
+    # Comments or strings explicitly mentioning US/non-EU location
+    r'#[^#\n]*\bUS-?based\b',
+    r'#[^#\n]*\bUnited States\b',
+    r'"[^"]*\bUS-?based\b|\'[^\']*\bUS-?based\b',
+    # Generic external HTTP calls to non-EU .com domains (not localhost or EEA TLDs)
+    r'requests\.(post|get|put|patch)\s*\(\s*["\']https?://[^"\']*(?<!\.eu)(?<!\.de)(?<!\.fr)(?<!\.nl)\.(?:com|io|net|org)',
 ]
 
 # Data storage patterns
@@ -124,19 +130,20 @@ class VendorScanner(BaseScanner):
                 findings.append(ScannerFinding(
                     scanner_name=self.name,
                     finding_type="non_eea_transfer",
-                    title="Possible non-EEA data transfer",
+                    title="Personal data transfer to non-EEA service — adequacy or SCCs required",
                     description=(
-                        "Code references a region or service that may be outside the EEA. "
-                        "Transfers of personal data to non-EEA countries require appropriate "
-                        "safeguards under GDPR Chapter V (SCCs, adequacy decision, etc.)."
+                        "Code references a region, service or URL that appears to be outside the EEA. "
+                        "International transfers of personal data to non-EEA/non-adequate countries require "
+                        "appropriate safeguards under GDPR Art. 44-49 (adequacy decision, SCCs, BCRs, etc.). "
+                        "No transfer safeguard evidence found in scanned code."
                     ),
                     confidence=0.75,
                     file_path=filename,
                     line_start=line_num,
                     evidence_excerpt=self._excerpt(line_text),
-                    tags=["transfer", "non_eea", "GDPR_ART44"],
+                    tags=["transfer", "third_country_transfer", "non_eea", "GDPR_ART44_49_TRANSFERS"],
                     suggested_node_type="third_party_transfer",
-                    metadata={}
+                    metadata={"transfer_type": "international"}
                 ))
                 break
 
