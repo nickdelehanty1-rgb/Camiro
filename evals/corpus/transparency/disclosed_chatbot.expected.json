@@ -1,0 +1,20 @@
+{
+  "case_id": "transparency/disclosed_chatbot",
+  "description": "Customer-service chatbot that clearly discloses AI nature — must NOT trigger high-severity Art. 50 finding",
+  "risk_tier_expected": "low_or_clean",
+  "must_find": [],
+  "must_not_find": [
+    {
+      "id": "false_art50_high_severity",
+      "keywords_all_of": ["disclosure", "art. 50"],
+      "severity_at_least": "high",
+      "reason": "Chatbot has explicit AI disclosure — no high-severity Art. 50 finding should fire"
+    },
+    {
+      "id": "false_prohibited",
+      "keywords_all_of": ["prohibited"],
+      "reason": "Nothing prohibited in a properly disclosed AI chatbot"
+    }
+  ],
+  "data_types_expected": []
+}

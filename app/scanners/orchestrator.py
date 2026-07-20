@@ -9,6 +9,7 @@ from .vendor_scanner import VendorScanner, DataStorageScanner, RetentionDeletion
 from .security_scanner import CookieTrackingScanner, SecurityControlScanner
 from .data_flow_scanner import DataFlowScanner
 from .evidence_intake_scanner import EvidenceIntakeScanner
+from .transparency_scanner import TransparencyScanner
 
 
 ALL_SCANNERS = [
@@ -24,6 +25,7 @@ ALL_SCANNERS = [
     CookieTrackingScanner(),
     SecurityControlScanner(),
     DataFlowScanner(),
+    TransparencyScanner(),
 ]
 
 

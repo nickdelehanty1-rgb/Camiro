@@ -696,36 +696,96 @@ obligations:
       - "Incident reporting procedure"
       - "Log retention records"
 
-  - obligation_code: AI_ACT_ART50_TRANSPARENCY
+  - obligation_code: AI_ACT_ART50_1_CHATBOT_DISCLOSURE
     legal_source_short_name: AI_ACT
-    citation_label: "AI Act Art. 50"
-    title: "Transparency Obligations for Certain AI Systems"
+    citation_label: "AI Act Art. 50(1)"
+    title: "Chatbot / Conversational AI — AI Disclosure Obligation"
     description: >
-      Providers of AI systems interacting with natural persons must ensure persons
-      are informed they are interacting with an AI, unless obvious from context.
-      Providers of emotion recognition or biometric categorisation systems must
-      inform natural persons of operation.
-      Providers of AI-generated content must ensure output is marked as AI-generated.
-      These obligations apply from August 2026.
+      Providers and deployers of AI systems designed to interact directly with natural
+      persons must ensure those persons are informed they are interacting with an AI,
+      in a clear and distinguishable manner, prior to and during the interaction —
+      unless it is obvious from the context that the user is interacting with an AI.
+      Applies from 2 August 2026 (Art. 50(1) AI Act).
     actor_role: provider
     control_family: transparency
-    severity_default: medium
+    severity_default: high
     trigger_conditions:
-      - "chatbot or conversational AI"
-      - "AI system interacting with users"
-      - "emotion recognition"
-      - "AI-generated content"
+      - "chatbot or conversational AI system"
+      - "AI assistant interacting with users"
+      - "automated customer service with LLM"
     required_actions:
-      - "Disclose AI nature to users at start of interaction"
-      - "Label AI-generated content"
-      - "Disclose emotion recognition or biometric systems"
+      - "Add AI disclosure at the start of every conversation"
+      - "Ensure disclosure is clear, prominent and unmissable"
+      - "Do not allow users to be misled into believing they are speaking with a human"
     evidence_required:
-      - "AI disclosure mechanism"
-      - "Content labelling system"
+      - "AI disclosure mechanism in conversation flow"
+      - "User testing confirming disclosure is visible and understood"
+    application_date: "2026-08-02"
     example_technical_signals:
-      - "chatbot with no AI disclosure"
-      - "AI-generated text without label"
-      - "emotion_detection without user notification"
+      - "chatbot or chat() function with no AI disclosure message"
+      - "LLM response handler with no is_ai or ai_disclosure field"
+      - "customer service bot with no notice to user"
+
+  - obligation_code: AI_ACT_ART50_2_CONTENT_MARKING
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Art. 50(2)"
+    title: "AI-Generated Content — Machine-Readable Marking Obligation"
+    description: >
+      Providers of AI systems generating synthetic audio, image, video or text output
+      must ensure outputs are marked as AI-generated in a machine-readable format.
+      Deepfakes and AI-manipulated content depicting real persons must be disclosed.
+      Art. 50(2) marking applies from 2 August 2026; legacy systems have until
+      2 December 2026 to implement machine-readable marking.
+    actor_role: provider
+    control_family: transparency
+    severity_default: high
+    trigger_conditions:
+      - "AI-generated image, audio or video output"
+      - "text generation for publication or user-facing content"
+      - "deepfake or face-swap functionality"
+    required_actions:
+      - "Embed machine-readable metadata marking AI-generated outputs"
+      - "Disclose when synthetic content depicts real persons"
+      - "Implement watermarking or provenance mechanism"
+    evidence_required:
+      - "Content watermarking or metadata system"
+      - "Deepfake disclosure mechanism"
+    application_date: "2026-08-02"
+    legacy_application_date: "2026-12-02"
+    example_technical_signals:
+      - "generate_image() or text_to_image() with no watermark or metadata"
+      - "synthesize_speech() with no AI content marking"
+      - "face_swap or deepfake function with no disclosure"
+
+  - obligation_code: AI_ACT_ART50_3_EMOTION_BIOMETRIC
+    legal_source_short_name: AI_ACT
+    citation_label: "AI Act Art. 50(3)"
+    title: "Emotion Recognition / Biometric Categorisation — Disclosure Obligation"
+    description: >
+      Deployers of AI systems that perform emotion recognition or biometric
+      categorisation of natural persons must inform the exposed persons of the
+      operation of the system. Applies from 2 August 2026 (Art. 50(3) AI Act).
+      This obligation applies regardless of the purpose; individuals must be
+      told that the system is operating on them.
+    actor_role: deployer
+    control_family: transparency
+    severity_default: high
+    trigger_conditions:
+      - "emotion recognition system"
+      - "biometric categorisation by AI"
+      - "facial analysis or affect detection"
+    required_actions:
+      - "Inform persons that emotion recognition is operating before or at start of interaction"
+      - "Provide clear, accessible notice of biometric categorisation"
+      - "Do not operate emotion recognition without the person's knowledge"
+    evidence_required:
+      - "User-facing notice of emotion recognition / biometric categorisation"
+      - "Consent or notification records"
+    application_date: "2026-08-02"
+    example_technical_signals:
+      - "detect_emotion() or emotion_recognition() with no user notification"
+      - "analyse_face() or biometric_categorise() with no disclosure"
+      - "sentiment analysis on faces without disclosure"
 
   - obligation_code: AI_ACT_GPAI_OBLIGATIONS
     legal_source_short_name: AI_ACT

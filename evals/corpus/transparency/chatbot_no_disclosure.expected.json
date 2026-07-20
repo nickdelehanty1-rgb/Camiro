@@ -1,0 +1,21 @@
+{
+  "case_id": "transparency/chatbot_no_disclosure",
+  "description": "Customer-service chatbot with no AI disclosure to the user — must trigger Art. 50(1) finding",
+  "risk_tier_expected": "limited",
+  "must_find": [
+    {
+      "id": "art50_chatbot_no_disclosure",
+      "articles_any_of": [["AI Act 50"], ["AI Act Art. 50(1)"], ["AI Act 50(1)"]],
+      "keywords_any_of": ["disclosure", "chatbot", "conversational", "ai", "informed", "interacting"],
+      "min_severity": "medium"
+    }
+  ],
+  "must_not_find": [
+    {
+      "id": "false_prohibited",
+      "keywords_all_of": ["prohibited"],
+      "reason": "Missing AI disclosure is a transparency gap, not a prohibited practice"
+    }
+  ],
+  "data_types_expected": []
+}
